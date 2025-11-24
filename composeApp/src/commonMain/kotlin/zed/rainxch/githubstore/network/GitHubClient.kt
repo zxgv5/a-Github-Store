@@ -2,6 +2,11 @@ package zed.rainxch.githubstore.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.util.network.UnresolvedAddressException
+import kotlinx.io.IOException
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.*
 import io.ktor.http.HttpHeaders
@@ -17,6 +22,27 @@ fun buildGitHubHttpClient(getAccessToken: () -> String?): HttpClient {
     val json = Json { ignoreUnknownKeys = true }
     return HttpClient {
         install(ContentNegotiation) { json(json) }
+        install(HttpTimeout) {
+            // Keep conservative timeouts to avoid long hangs on mobile networks
+            requestTimeoutMillis = 10000
+            connectTimeoutMillis = 5000
+            socketTimeoutMillis = 10000
+        }
+        install(HttpRequestRetry) {
+            maxRetries = 2
+            retryIf { _, response ->
+                val code = response.status.value
+                code >= 500 && code < 600 // retry on 5xx
+            }
+            retryOnExceptionIf { _, cause ->
+                // Retry on timeouts and transient network failures
+                cause is HttpRequestTimeoutException ||
+                cause is UnresolvedAddressException ||
+                cause is IOException
+            }
+            exponentialDelay()
+        }
+        expectSuccess = false
         defaultRequest {
             url("https://api.github.com")
             header(HttpHeaders.Accept, "application/vnd.github+json")
