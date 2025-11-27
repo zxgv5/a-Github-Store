@@ -74,6 +74,13 @@ class AuthenticationViewModel(
             is AuthenticationAction.Logout -> logout()
             AuthenticationAction.MarkLoggedIn -> _state.update { it.copy(loginState = AuthLoginState.LoggedIn) }
             AuthenticationAction.MarkLoggedOut -> _state.update { it.copy(loginState = AuthLoginState.LoggedOut) }
+            is AuthenticationAction.OnInfo -> {
+                _state.update {
+                    it.copy(
+                        info = action.message
+                    )
+                }
+            }
         }
     }
 

@@ -56,7 +56,15 @@ fun AuthenticationRoot(
 
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
-            is AuthenticationEvents.OpenBrowser -> openBrowser(event.url)
+            is AuthenticationEvents.OpenBrowser -> {
+                openBrowser(
+                    url = event.url,
+                    onError = { info ->
+                        viewModel.onAction(AuthenticationAction.OnInfo(info))
+                    }
+                )
+            }
+
             is AuthenticationEvents.CopyToClipboard -> copyToClipboard(event.label, event.text)
             AuthenticationEvents.OnNavigateToMain -> {
                 onNavigateToHome()
@@ -196,6 +204,17 @@ fun StateDevicePrompt(
                     contentDescription = "Copy the code"
                 )
             }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        state.info?.let { info ->
+            Text(
+                text = info,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
 
         Spacer(Modifier.height(16.dp))

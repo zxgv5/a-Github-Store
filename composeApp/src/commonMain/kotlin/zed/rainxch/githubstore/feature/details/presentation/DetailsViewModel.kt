@@ -102,7 +102,6 @@ class DetailsViewModel(
             PlatformType.WINDOWS -> name.endsWith(".msi") || name.endsWith(".exe")
             PlatformType.MACOS -> name.endsWith(".dmg") || name.endsWith(".pkg")
             PlatformType.LINUX -> name.endsWith(".appimage") || name.endsWith(".deb") || name.endsWith(".rpm")
-            else -> false
         }
     }
 
@@ -117,7 +116,6 @@ class DetailsViewModel(
             PlatformType.WINDOWS -> listOf(".msi", ".exe")
             PlatformType.MACOS -> listOf(".dmg", ".pkg")
             PlatformType.LINUX -> listOf(".appimage", ".deb", ".rpm")
-            else -> emptyList()
         }
 
         return assets.maxByOrNull { asset ->
@@ -281,7 +279,7 @@ class DetailsViewModel(
                 char('-')
                 monthNumber()
                 char('-')
-                dayOfMonth()
+                day()
                 char(' ')
                 hour()
                 char(':')

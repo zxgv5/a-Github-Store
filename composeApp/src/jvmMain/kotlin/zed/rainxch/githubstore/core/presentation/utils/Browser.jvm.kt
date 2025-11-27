@@ -3,31 +3,34 @@ package zed.rainxch.githubstore.core.presentation.utils
 import java.awt.Desktop
 import java.net.URI
 
-actual fun openBrowser(url: String) {
-    try {
-        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-            Desktop.getDesktop().browse(URI(url))
-        } else {
-            // Fallback for Linux/WSL
-            Runtime.getRuntime().exec(arrayOf("xdg-open", url))
-        }
-    } catch (e: Exception) {
-        // Final fallback - try common browsers directly
-        val browsers = listOf("xdg-open", "firefox", "google-chrome", "chromium")
-        var success = false
+actual fun openBrowser(
+    url: String,
+    onError: (error: String) -> Unit
+) {
+    val os = System.getProperty("os.name").lowercase()
 
-        for (browser in browsers) {
-            try {
-                Runtime.getRuntime().exec(arrayOf(browser, url))
-                success = true
-                break
-            } catch (e: Exception) {
-                continue
+    try {
+        when {
+            os.contains("linux") -> {
+                val process = Runtime.getRuntime().exec(arrayOf("xdg-open", url))
+
+                Thread.sleep(100)
+                if (process.isAlive || process.exitValue() != 0) {
+                    throw Exception("xdg-open failed")
+                }
+            }
+
+            Desktop.isDesktopSupported() && Desktop.getDesktop()
+                .isSupported(Desktop.Action.BROWSE) -> {
+                Desktop.getDesktop().browse(URI(url))
+            }
+
+            else -> {
+                error("Cannot open browser automatically. Please visit: $url")
             }
         }
-
-        if (!success) {
-            println("Could not open browser. Please visit: $url")
-        }
+    } catch (e: Exception) {
+        println("Failed to open browser: ${e.message}")
+        println("Please open this URL manually: $url")
     }
 }

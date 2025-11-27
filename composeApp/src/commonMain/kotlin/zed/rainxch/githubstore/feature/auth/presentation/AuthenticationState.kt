@@ -4,7 +4,8 @@ import zed.rainxch.githubstore.feature.auth.data.DeviceStart
 
 data class AuthenticationState(
     val loginState: AuthLoginState = AuthLoginState.LoggedOut,
-    val copied: Boolean = false
+    val copied: Boolean = false,
+    val info: String? = null
 )
 
 sealed interface AuthLoginState {
