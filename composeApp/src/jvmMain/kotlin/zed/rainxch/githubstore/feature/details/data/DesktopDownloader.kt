@@ -1,4 +1,4 @@
-package zed.rainxch.githubstore.platform
+package zed.rainxch.githubstore.feature.details.data
 
 import io.ktor.client.*
 import io.ktor.client.request.*

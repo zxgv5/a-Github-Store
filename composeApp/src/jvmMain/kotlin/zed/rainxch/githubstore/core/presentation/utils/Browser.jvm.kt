@@ -12,7 +12,6 @@ actual fun openBrowser(
     try {
         when {
             os.contains("linux") -> {
-                // Just execute and don't wait - browser opening is async
                 Runtime.getRuntime().exec(arrayOf("xdg-open", url))
             }
 
@@ -26,7 +25,6 @@ actual fun openBrowser(
             }
         }
     } catch (e: Exception) {
-        // Only if the command itself fails to execute
         onError("Failed to open browser: ${e.message}. Please visit: $url")
     }
 }

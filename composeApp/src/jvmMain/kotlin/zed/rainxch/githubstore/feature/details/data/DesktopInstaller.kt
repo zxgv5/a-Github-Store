@@ -1,4 +1,4 @@
-package zed.rainxch.githubstore.platform
+package zed.rainxch.githubstore.feature.details.data
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
