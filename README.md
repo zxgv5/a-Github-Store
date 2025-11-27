@@ -89,7 +89,7 @@ Your project can appear automatically if it follows these conditions:
    - Repositories are fetched via the public GitHub Search API.
    - Topic, language, and description help the ranking:
      - Android apps: topics like `android`, `mobile`, `apk`.
-     - Desktop apps: topics like `desktop`, `gui`, `app`, `compose-desktop`, `electron`.
+     - Desktop apps: topics like `desktop`, `windows`, `linux`, `macos`, `compose-desktop`, `electron`.
    - Having at least a few stars makes it more likely to appear under Popular/Updated/New sections.
 
 If your repo meets these conditions, GithubStore can find it through search and show it automatically—no manual submission required.
