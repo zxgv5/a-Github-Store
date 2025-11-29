@@ -10,15 +10,13 @@ enum class Architecture {
     companion object {
         fun fromString(arch: String): Architecture {
             val normalized = arch.lowercase().trim()
-            return when {
-                normalized in listOf("x86_64", "amd64", "x64") -> X86_64
-                normalized in listOf("aarch64", "arm64") -> AARCH64
-                normalized in listOf("x86", "i386", "i686") -> X86
-                normalized in listOf("arm", "armv7l", "armv7") -> ARM
+            return when (normalized) {
+                in listOf("x86_64", "amd64", "x64") -> X86_64
+                in listOf("aarch64", "arm64") -> AARCH64
+                in listOf("x86", "i386", "i686") -> X86
+                in listOf("arm", "armv7l", "armv7") -> ARM
                 else -> UNKNOWN
             }
         }
     }
 }
-
-expect fun detectSystemArchitecture(): Architecture

@@ -6,8 +6,8 @@ import kotlinx.coroutines.withContext
 import zed.rainxch.githubstore.core.domain.model.Architecture
 import zed.rainxch.githubstore.core.domain.model.GithubAsset
 import zed.rainxch.githubstore.core.domain.model.PlatformType
+import zed.rainxch.githubstore.feature.details.data.model.LinuxPackageType
 import zed.rainxch.githubstore.feature.details.data.model.LinuxTerminal
-import zed.rainxch.githubstore.feature.details.domain.model.LinuxPackageType
 import java.awt.Desktop
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection

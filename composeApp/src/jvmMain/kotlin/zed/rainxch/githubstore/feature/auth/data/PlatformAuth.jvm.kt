@@ -7,10 +7,6 @@ import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.util.prefs.Preferences
 
-import java.io.File
-import java.io.FileInputStream
-import java.util.Properties
-
 actual fun getGithubClientId(): String {
     val fromSys = System.getProperty("GITHUB_CLIENT_ID")?.trim().orEmpty()
     if (fromSys.isNotEmpty()) return fromSys
@@ -19,23 +15,6 @@ actual fun getGithubClientId(): String {
     if (fromEnv.isNotEmpty()) return fromEnv
 
     return BuildConfig.GITHUB_CLIENT_ID
-}
-
-private fun findLocalPropertiesValue(key: String): String? {
-    return try {
-        val maxDepth = 5
-        var dir = File(System.getProperty("user.dir"))
-        repeat(maxDepth) {
-            val candidate = File(dir, "local.properties")
-            if (candidate.exists()) {
-                Properties().apply {
-                    FileInputStream(candidate).use { load(it) }
-                }.getProperty(key)?.let { return it }
-            }
-            dir = dir.parentFile ?: return null
-        }
-        null
-    } catch (_: Throwable) { null }
 }
 
 actual fun copyToClipboard(label: String, text: String): Boolean {
