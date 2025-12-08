@@ -13,4 +13,10 @@ interface Installer {
     fun isAssetInstallable(assetName: String): Boolean
     fun choosePrimaryAsset(assets: List<GithubAsset>): GithubAsset?
     fun detectSystemArchitecture(): Architecture
+    fun isObtainiumInstalled(): Boolean
+    fun openInObtainium(
+        repoOwner: String,
+        repoName: String,
+        onOpenInstaller: () -> Unit
+    )
 }

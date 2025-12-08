@@ -79,7 +79,8 @@ val detailsModule: Module = module {
             repositoryId = params.get(),
             detailsRepository = get(),
             downloader = get<Downloader>(),
-            installer = get<Installer>()
+            installer = get<Installer>(),
+            platform = getPlatform()
         )
     }
 }

@@ -5,16 +5,21 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.format.char
 import kotlinx.datetime.toLocalDateTime
+import zed.rainxch.githubstore.core.domain.Platform
+import zed.rainxch.githubstore.core.domain.model.PlatformType
 import zed.rainxch.githubstore.core.presentation.utils.openBrowser
 import zed.rainxch.githubstore.feature.details.data.Downloader
 import zed.rainxch.githubstore.feature.details.data.Installer
@@ -27,6 +32,7 @@ class DetailsViewModel(
     private val detailsRepository: DetailsRepository,
     private val downloader: Downloader,
     private val installer: Installer,
+    private val platform: Platform
 ) : ViewModel() {
 
     private var hasLoadedInitialData = false
@@ -46,6 +52,9 @@ class DetailsViewModel(
             SharingStarted.WhileSubscribed(5000),
             DetailsState()
         )
+
+    private val _events = Channel<DetailsEvent>()
+    val events = _events.receiveAsFlow()
 
     private fun loadInitial() {
         viewModelScope.launch {
@@ -92,6 +101,8 @@ class DetailsViewModel(
                     }
                 }
 
+                val isObtainiumEnabled = platform.type == PlatformType.ANDROID
+
                 val latestRelease = latestReleaseDeferred.await()
                 val stats = statsDeferred.await()
                 val readme = readmeDeferred.await()
@@ -104,6 +115,8 @@ class DetailsViewModel(
 
                 val primary = installer.choosePrimaryAsset(installable)
 
+                val isObtainiumAvailable = installer.isObtainiumInstalled()
+
                 _state.value = _state.value.copy(
                     isLoading = false,
                     errorMessage = null,
@@ -114,7 +127,9 @@ class DetailsViewModel(
                     installableAssets = installable,
                     primaryAsset = primary,
                     userProfile = userProfile,
-                    systemArchitecture = installer.detectSystemArchitecture()
+                    systemArchitecture = installer.detectSystemArchitecture(),
+                    isObtainiumAvailable = isObtainiumAvailable,
+                    isObtainiumEnabled = isObtainiumEnabled
                 )
             } catch (t: Throwable) {
                 Logger.e { "Details load failed: ${t.message}" }
@@ -173,10 +188,41 @@ class DetailsViewModel(
                 _state.value.userProfile?.htmlUrl?.let { openBrowser(it) }
             }
 
+            DetailsAction.OpenInObtainium -> {
+                val repo = _state.value.repository
+                repo?.owner?.login?.let {
+                    installer.openInObtainium(
+                        repoOwner = it,
+                        repoName = repo.name,
+                        onOpenInstaller = {
+                            viewModelScope.launch {
+                                _events.send(
+                                    DetailsEvent.OnOpenRepositoryInApp(OBTAINIUM_REPO_ID)
+                                )
+                            }
+                        }
+                    )
+
+                }
+                _state.update {
+                    it.copy(
+                        isInstallDropdownExpanded = false
+                    )
+                }
+            }
+
             DetailsAction.OnNavigateBackClick -> { /* handled in UI host */
             }
 
             is DetailsAction.OpenAuthorInApp -> { /* handled in UI host */
+            }
+
+            DetailsAction.OnToggleInstallDropdown -> {
+                _state.update {
+                    it.copy(
+                        isInstallDropdownExpanded = !it.isInstallDropdownExpanded
+                    )
+                }
             }
         }
     }
@@ -309,4 +355,7 @@ class DetailsViewModel(
     }
 
 
+    private companion object {
+        const val OBTAINIUM_REPO_ID = 523534328
+    }
 }

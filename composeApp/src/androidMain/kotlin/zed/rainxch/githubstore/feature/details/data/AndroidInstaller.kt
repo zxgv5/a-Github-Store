@@ -1,5 +1,6 @@
 package zed.rainxch.githubstore.feature.details.data
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -30,10 +31,8 @@ class AndroidInstaller(
     override fun isAssetInstallable(assetName: String): Boolean {
         val name = assetName.lowercase()
 
-        // Only APK files are installable on Android
         if (!name.endsWith(".apk")) return false
 
-        // Check architecture compatibility
         val systemArch = detectSystemArchitecture()
         return isArchitectureCompatible(name, systemArch)
     }
@@ -41,7 +40,6 @@ class AndroidInstaller(
     private fun isArchitectureCompatible(assetName: String, systemArch: Architecture): Boolean {
         val name = assetName.lowercase()
 
-        // If no architecture specified, assume universal APK
         val hasArchInName = listOf(
             "x86_64", "amd64", "x64",
             "aarch64", "arm64",
@@ -49,22 +47,26 @@ class AndroidInstaller(
             "armv7", "armeabi", "arm"
         ).any { name.contains(it) }
 
-        if (!hasArchInName) return true // Universal APK
+        if (!hasArchInName) return true
 
         return when (systemArch) {
             Architecture.X86_64 -> {
                 name.contains("x86_64") || name.contains("amd64") || name.contains("x64")
             }
+
             Architecture.AARCH64 -> {
                 name.contains("aarch64") || name.contains("arm64")
             }
+
             Architecture.X86 -> {
                 name.contains("i386") || name.contains("i686") || name.contains("x86")
             }
+
             Architecture.ARM -> {
                 name.contains("armv7") || name.contains("armeabi") || name.contains("arm")
             }
-            Architecture.UNKNOWN -> true // Allow all if we can't detect
+
+            Architecture.UNKNOWN -> true
         }
     }
 
@@ -73,29 +75,31 @@ class AndroidInstaller(
 
         val systemArch = detectSystemArchitecture()
 
-        // Filter for compatible APKs
         val compatibleAssets = assets.filter { asset ->
             isArchitectureCompatible(asset.name.lowercase(), systemArch)
         }
 
         val assetsToConsider = compatibleAssets.ifEmpty { assets }
 
-        // Prefer exact architecture match, then largest file
         return assetsToConsider.maxByOrNull { asset ->
             val name = asset.name.lowercase()
             val archBoost = when (systemArch) {
                 Architecture.X86_64 -> {
                     if (name.contains("x86_64") || name.contains("amd64")) 10000 else 0
                 }
+
                 Architecture.AARCH64 -> {
                     if (name.contains("aarch64") || name.contains("arm64")) 10000 else 0
                 }
+
                 Architecture.X86 -> {
                     if (name.contains("i386") || name.contains("i686")) 10000 else 0
                 }
+
                 Architecture.ARM -> {
                     if (name.contains("armv7") || name.contains("armeabi")) 10000 else 0
                 }
+
                 Architecture.UNKNOWN -> 0
             }
             archBoost + asset.size
@@ -144,6 +148,39 @@ class AndroidInstaller(
             Logger.d { "APK installation intent launched" }
         } else {
             throw IllegalStateException("No installer available on this device")
+        }
+    }
+
+    override fun isObtainiumInstalled(): Boolean {
+        return try {
+            context.packageManager.getPackageInfo("dev.imranr.obtainium.fdroid", 0)
+            true
+        } catch (e: Exception) {
+            try {
+                context.packageManager.getPackageInfo("dev.imranr.obtainium", 0)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+
+    override fun openInObtainium(
+        repoOwner: String,
+        repoName: String,
+        onOpenInstaller: () -> Unit
+    ) {
+        val obtainiumUrl = "obtainium://add/https://github.com/$repoOwner/$repoName"
+
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = obtainiumUrl.toUri()
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        try {
+            context.startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            onOpenInstaller()
         }
     }
 }

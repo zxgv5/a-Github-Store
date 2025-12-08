@@ -82,6 +82,13 @@ fun AppNavigation(
                 onNavigateBack = {
                     navHostController.navigateUp()
                 },
+                onOpenRepositoryInApp = { repoId ->
+                    navHostController.navigate(
+                        GithubStoreGraph.DetailsScreen(
+                            repositoryId = repoId
+                        )
+                    )
+                },
                 viewModel = koinViewModel {
                     parametersOf(args.repositoryId)
                 }

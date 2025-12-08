@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 import zed.rainxch.githubstore.core.presentation.theme.GithubStoreTheme
+import zed.rainxch.githubstore.core.presentation.utils.ObserveAsEvents
 import zed.rainxch.githubstore.feature.details.presentation.components.sections.about
 import zed.rainxch.githubstore.feature.details.presentation.components.sections.header
 import zed.rainxch.githubstore.feature.details.presentation.components.sections.logs
@@ -37,10 +38,19 @@ import zed.rainxch.githubstore.feature.details.presentation.components.states.Er
 
 @Composable
 fun DetailsRoot(
+    onOpenRepositoryInApp: (repoId: Int) -> Unit,
     onNavigateBack: () -> Unit,
     viewModel: DetailsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            is DetailsEvent.OnOpenRepositoryInApp -> {
+                onOpenRepositoryInApp(event.repositoryId)
+            }
+        }
+    }
 
     DetailsScreen(
         state = state,
@@ -165,7 +175,9 @@ fun DetailsScreen(
 private fun Preview() {
     GithubStoreTheme {
         DetailsScreen(
-            state = DetailsState(),
+            state = DetailsState(
+                isLoading = false
+            ),
             onAction = {}
         )
     }

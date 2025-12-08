@@ -27,6 +27,13 @@ class DesktopInstaller(
     }
 
     override fun detectSystemArchitecture(): Architecture = systemArchitecture
+    override fun isObtainiumInstalled(): Boolean {
+        return false
+    }
+
+    override fun openInObtainium(repoOwner: String, repoName: String, onOpenInstaller: () -> Unit) {
+        // No-op
+    }
 
     override fun isAssetInstallable(assetName: String): Boolean {
         val name = assetName.lowercase()
@@ -90,7 +97,8 @@ class DesktopInstaller(
                     "x86_64" -> Architecture.X86_64
                     else -> Architecture.fromString(System.getProperty("os.arch"))
                 }
-            } catch (_: Exception) { }
+            } catch (_: Exception) {
+            }
         }
 
         val osArch = System.getProperty("os.arch") ?: return Architecture.UNKNOWN
@@ -142,7 +150,8 @@ class DesktopInstaller(
             }
 
             if ((name.endsWith(".dmg") || name.endsWith(".pkg")) &&
-                !listOf("x86_64", "amd64", "arm64", "aarch64").any { name.contains(it) }) {
+                !listOf("x86_64", "amd64", "arm64", "aarch64").any { name.contains(it) }
+            ) {
                 return true
             }
         }
@@ -539,24 +548,31 @@ class DesktopInstaller(
                     LinuxTerminal.GNOME_TERMINAL -> ProcessBuilder(
                         "gnome-terminal", "--", "bash", "-c", command
                     )
+
                     LinuxTerminal.KONSOLE -> ProcessBuilder(
                         "konsole", "-e", "bash", "-c", command
                     )
+
                     LinuxTerminal.XTERM -> ProcessBuilder(
                         "xterm", "-e", "bash", "-c", command
                     )
+
                     LinuxTerminal.XFCE4_TERMINAL -> ProcessBuilder(
                         "xfce4-terminal", "-e", "bash -c \"$command\""
                     )
+
                     LinuxTerminal.ALACRITTY -> ProcessBuilder(
                         "alacritty", "-e", "bash", "-c", command
                     )
+
                     LinuxTerminal.KITTY -> ProcessBuilder(
                         "kitty", "bash", "-c", command
                     )
+
                     LinuxTerminal.TILIX -> ProcessBuilder(
                         "tilix", "-e", "bash -c \"$command\""
                     )
+
                     LinuxTerminal.MATE_TERMINAL -> ProcessBuilder(
                         "mate-terminal", "-e", "bash -c \"$command\""
                     )

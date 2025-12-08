@@ -29,7 +29,12 @@ data class DetailsState(
     val installError: String? = null,
 
     val downloadStage: DownloadStage = DownloadStage.IDLE,
-    val systemArchitecture: Architecture = Architecture.UNKNOWN
+    val systemArchitecture: Architecture = Architecture.UNKNOWN,
+
+    val isObtainiumAvailable: Boolean = false,
+    val isObtainiumEnabled: Boolean = false,
+
+    val isInstallDropdownExpanded: Boolean = false,
 )
 
 data class InstallLogItem(
