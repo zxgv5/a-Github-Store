@@ -10,9 +10,7 @@ import zed.rainxch.githubstore.core.presentation.theme.GithubStoreTheme
 fun App(
     onAuthenticationChecked: () -> Unit = { },
 ) {
-    GithubStoreTheme {
-        AppNavigation(
-            onAuthenticationChecked = onAuthenticationChecked
-        )
-    }
+    AppNavigation(
+        onAuthenticationChecked = onAuthenticationChecked
+    )
 }

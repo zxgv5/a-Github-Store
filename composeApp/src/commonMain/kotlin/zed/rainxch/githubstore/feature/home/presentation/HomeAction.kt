@@ -8,6 +8,7 @@ sealed interface HomeAction {
     data object Retry : HomeAction
     data object LoadMore : HomeAction
     data object OnSearchClick : HomeAction
+    data object OnSettingsClick : HomeAction
     data class SwitchCategory(val category: HomeCategory) : HomeAction
     data class OnRepositoryClick(val repo: GithubRepoSummary) : HomeAction
 }

@@ -1,7 +1,11 @@
 package zed.rainxch.githubstore.app.di
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import zed.rainxch.githubstore.core.data.local.data_store.createDataStore
 import zed.rainxch.githubstore.feature.auth.data.AndroidTokenStore
 import zed.rainxch.githubstore.feature.auth.data.TokenStore
 import zed.rainxch.githubstore.feature.details.data.AndroidDownloader
@@ -27,6 +31,10 @@ actual val platformModule: Module = module {
 
     single<FileLocationsProvider> {
         AndroidFileLocationsProvider(context = get())
+    }
+
+    single<DataStore<Preferences>> {
+        createDataStore(androidContext())
     }
 
     single<TokenStore> {

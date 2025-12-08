@@ -25,7 +25,7 @@ import zed.rainxch.githubstore.core.domain.model.GithubRepoSummary
 import zed.rainxch.githubstore.core.data.mappers.toSummary
 import zed.rainxch.githubstore.core.data.model.GithubRepoNetworkModel
 import zed.rainxch.githubstore.core.data.model.GithubRepoSearchResponse
-import zed.rainxch.githubstore.feature.home.domain.repository.PaginatedRepos
+import zed.rainxch.githubstore.feature.home.domain.model.PaginatedRepos
 import zed.rainxch.githubstore.feature.search.data.repository.dto.GithubReleaseNetworkModel
 import zed.rainxch.githubstore.feature.search.data.repository.utils.LruCache
 import zed.rainxch.githubstore.feature.search.domain.model.SearchPlatformType

@@ -10,9 +10,11 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import zed.rainxch.githubstore.core.data.TokenDataSource
+import zed.rainxch.githubstore.core.domain.repository.ThemesRepository
 
 class MainViewModel(
-    private val tokenDataSource: TokenDataSource
+    private val tokenDataSource: TokenDataSource,
+    private val themesRepository: ThemesRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MainState())
@@ -38,6 +40,18 @@ class MainViewModel(
                 .collect { authInfo ->
                     _state.update { it.copy(isLoggedIn = authInfo != null) }
                     Logger.d("MainViewmodel") { authInfo.toString() }
+                }
+        }
+
+        viewModelScope.launch {
+            themesRepository
+                .getThemeColor()
+                .collect { theme ->
+                    _state.update {
+                        it.copy(
+                            currentColorTheme = theme
+                        )
+                    }
                 }
         }
     }

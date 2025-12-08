@@ -12,6 +12,7 @@ fun initKoin(config: KoinAppDeclaration? = null) {
             homeModule,
             searchModule,
             detailsModule,
+            settingsModule,
             platformModule
         )
     }

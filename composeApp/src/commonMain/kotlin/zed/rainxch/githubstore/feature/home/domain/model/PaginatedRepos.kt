@@ -1,4 +1,4 @@
-package zed.rainxch.githubstore.feature.home.domain.repository
+package zed.rainxch.githubstore.feature.home.domain.model
 
 import zed.rainxch.githubstore.core.domain.model.GithubRepoSummary
 

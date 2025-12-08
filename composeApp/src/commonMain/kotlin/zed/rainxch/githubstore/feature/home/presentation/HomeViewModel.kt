@@ -164,6 +164,10 @@ class HomeViewModel(
             HomeAction.OnSearchClick -> {
                 /* Handled in composable */
             }
+
+            HomeAction.OnSettingsClick -> {
+                /* Handled in composable */
+            }
         }
     }
 

@@ -21,7 +21,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridS
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -30,6 +30,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -58,6 +59,7 @@ import zed.rainxch.githubstore.feature.home.presentation.model.HomeCategory
 
 @Composable
 fun HomeRoot(
+    onNavigateToSettings: () -> Unit,
     onNavigateToSearch: () -> Unit,
     onNavigateToDetails: (zed.rainxch.githubstore.core.domain.model.GithubRepoSummary) -> Unit,
     viewModel: HomeViewModel = koinViewModel()
@@ -70,6 +72,10 @@ fun HomeRoot(
             when (action) {
                 HomeAction.OnSearchClick -> {
                     onNavigateToSearch()
+                }
+
+                HomeAction.OnSettingsClick -> {
+                    onNavigateToSettings()
                 }
 
                 is HomeAction.OnRepositoryClick -> onNavigateToDetails(action.repo)
@@ -96,7 +102,6 @@ fun HomeScreen(
             val totalItems = layoutInfo.totalItemsCount
             val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
 
-            // Trigger when near bottom (within 5 items)
             totalItems > 0 &&
                     lastVisibleItem != null &&
                     lastVisibleItem.index >= (totalItems - 5) &&
@@ -110,14 +115,13 @@ fun HomeScreen(
 
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore) {
-            Logger.d { "UI triggering LoadMore" }
             currentOnAction(HomeAction.LoadMore)
         }
     }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 navigationIcon = {
                     Image(
                         painter = painterResource(Res.drawable.app_icon),
@@ -133,23 +137,44 @@ fun HomeScreen(
                         text = "Github Store",
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Black
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier.padding(start = 4.dp)
                     )
                 },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            onAction(HomeAction.OnSearchClick)
-                        },
-                        colors = IconButtonDefaults.iconButtonColors(
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            modifier = Modifier.size(24.dp)
-                        )
+                        IconButton(
+                            onClick = {
+                                onAction(HomeAction.OnSearchClick)
+                            },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {
+                                onAction(HomeAction.OnSettingsClick)
+                            },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 },
                 modifier = Modifier.padding(12.dp)

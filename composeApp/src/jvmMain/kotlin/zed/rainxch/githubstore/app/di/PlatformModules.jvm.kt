@@ -1,7 +1,10 @@
 package zed.rainxch.githubstore.app.di
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import zed.rainxch.githubstore.core.data.local.data_store.createDataStore
 import zed.rainxch.githubstore.core.domain.getPlatform
 import zed.rainxch.githubstore.feature.auth.data.DesktopTokenStore
 import zed.rainxch.githubstore.feature.auth.data.TokenStore
@@ -32,6 +35,10 @@ actual val platformModule: Module = module {
         DesktopFileLocationsProvider(
             platform = platform.type
         )
+    }
+
+    single<DataStore<Preferences>> {
+        createDataStore()
     }
 
     single<TokenStore> {

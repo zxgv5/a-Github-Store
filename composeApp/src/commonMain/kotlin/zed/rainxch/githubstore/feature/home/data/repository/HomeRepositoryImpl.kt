@@ -29,7 +29,7 @@ import zed.rainxch.githubstore.core.data.model.GithubRepoSearchResponse
 import zed.rainxch.githubstore.core.domain.Platform
 import zed.rainxch.githubstore.core.domain.model.PlatformType
 import zed.rainxch.githubstore.feature.home.domain.repository.HomeRepository
-import zed.rainxch.githubstore.feature.home.domain.repository.PaginatedRepos
+import zed.rainxch.githubstore.feature.home.domain.model.PaginatedRepos
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.ExperimentalTime

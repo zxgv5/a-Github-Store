@@ -7,7 +7,9 @@ import org.koin.dsl.module
 import zed.rainxch.githubstore.MainViewModel
 import zed.rainxch.githubstore.core.data.DefaultTokenDataSource
 import zed.rainxch.githubstore.core.data.TokenDataSource
+import zed.rainxch.githubstore.core.data.repository.ThemesRepositoryImpl
 import zed.rainxch.githubstore.core.domain.getPlatform
+import zed.rainxch.githubstore.core.domain.repository.ThemesRepository
 import zed.rainxch.githubstore.network.buildAuthedGitHubHttpClient
 import zed.rainxch.githubstore.feature.auth.data.repository.AuthRepositoryImpl
 import zed.rainxch.githubstore.feature.auth.domain.*
@@ -24,6 +26,7 @@ import zed.rainxch.githubstore.feature.home.presentation.HomeViewModel
 import zed.rainxch.githubstore.feature.search.data.repository.SearchRepositoryImpl
 import zed.rainxch.githubstore.feature.search.domain.repository.SearchRepository
 import zed.rainxch.githubstore.feature.search.presentation.SearchViewModel
+import zed.rainxch.githubstore.feature.settings.presentation.SettingsViewModel
 
 val coreModule: Module = module {
     single<TokenDataSource> {
@@ -32,7 +35,17 @@ val coreModule: Module = module {
         )
     }
 
-    single { buildAuthedGitHubHttpClient(get()) }
+    single {
+        buildAuthedGitHubHttpClient(
+            tokenDataSource = get()
+        )
+    }
+
+    single<ThemesRepository> {
+        ThemesRepositoryImpl(
+            preferences = get()
+        )
+    }
 
     viewModelOf(::MainViewModel)
 }
@@ -83,4 +96,8 @@ val detailsModule: Module = module {
             platform = getPlatform()
         )
     }
+}
+
+val settingsModule: Module = module {
+    viewModelOf(::SettingsViewModel)
 }

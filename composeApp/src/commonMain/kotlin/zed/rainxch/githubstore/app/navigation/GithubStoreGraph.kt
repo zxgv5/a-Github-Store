@@ -16,4 +16,7 @@ sealed interface GithubStoreGraph {
     data class DetailsScreen(
         val repositoryId: Int
     ) : GithubStoreGraph
+
+    @Serializable
+    data object SettingsScreen : GithubStoreGraph
 }
