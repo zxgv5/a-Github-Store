@@ -20,13 +20,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mikepenz.markdown.coil3.Coil3ImageTransformerImpl
 import com.mikepenz.markdown.compose.Markdown
+import io.github.fletchmckee.liquid.liquefiable
 import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import zed.rainxch.githubstore.core.domain.model.GithubRelease
+import zed.rainxch.githubstore.feature.details.presentation.utils.LocalTopbarLiquidState
 import zed.rainxch.githubstore.feature.details.presentation.utils.rememberMarkdownColors
 import zed.rainxch.githubstore.feature.details.presentation.utils.rememberMarkdownTypography
 
 fun LazyListScope.whatsNew(latestRelease: GithubRelease) {
     item {
+        val liquidState = LocalTopbarLiquidState.current
+
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
         Spacer(Modifier.height(16.dp))
@@ -35,7 +39,9 @@ fun LazyListScope.whatsNew(latestRelease: GithubRelease) {
             text = "What's New",
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier
+                .liquefiable(liquidState)
+                .padding(bottom = 8.dp),
             fontWeight = FontWeight.Bold,
         )
 
@@ -60,13 +66,15 @@ fun LazyListScope.whatsNew(latestRelease: GithubRelease) {
                     Text(
                         latestRelease.tagName,
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.liquefiable(liquidState)
                     )
 
                     Text(
                         latestRelease.publishedAt.take(10),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.liquefiable(liquidState)
                     )
                 }
 
@@ -82,7 +90,9 @@ fun LazyListScope.whatsNew(latestRelease: GithubRelease) {
                     typography = typography,
                     flavour = flavour,
                     imageTransformer = Coil3ImageTransformerImpl,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .liquefiable(liquidState),
                 )
             }
         }

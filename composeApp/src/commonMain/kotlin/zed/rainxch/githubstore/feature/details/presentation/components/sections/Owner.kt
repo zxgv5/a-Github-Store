@@ -30,15 +30,19 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import githubstore.composeapp.generated.resources.Res
 import githubstore.composeapp.generated.resources.ic_github
+import io.github.fletchmckee.liquid.liquefiable
 import org.jetbrains.compose.resources.painterResource
 import zed.rainxch.githubstore.core.domain.model.GithubUserProfile
 import zed.rainxch.githubstore.feature.details.presentation.DetailsAction
+import zed.rainxch.githubstore.feature.details.presentation.utils.LocalTopbarLiquidState
 
 fun LazyListScope.author(
     author: GithubUserProfile?,
     onAction: (DetailsAction) -> Unit
 ) {
     item {
+        val liquidState = LocalTopbarLiquidState.current
+
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
         Spacer(Modifier.height(16.dp))
@@ -47,7 +51,9 @@ fun LazyListScope.author(
             text = "Author",
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 12.dp),
+            modifier = Modifier
+                .padding(bottom = 12.dp)
+                .liquefiable(liquidState),
             fontWeight = FontWeight.Bold,
         )
 
@@ -71,7 +77,8 @@ fun LazyListScope.author(
                     contentDescription = null,
                     modifier = Modifier
                         .size(80.dp)
-                        .clip(CircleShape),
+                        .clip(CircleShape)
+                        .liquefiable(liquidState),
                     contentScale = ContentScale.Crop,
                 )
 
@@ -84,6 +91,7 @@ fun LazyListScope.author(
                             text = it,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.liquefiable(liquidState)
                         )
                     }
 
@@ -94,7 +102,8 @@ fun LazyListScope.author(
                             color = MaterialTheme.colorScheme.outline,
                             maxLines = 2,
                             softWrap = false,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.liquefiable(liquidState)
                         )
                     }
 

@@ -10,22 +10,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import io.github.fletchmckee.liquid.liquefiable
 import zed.rainxch.githubstore.feature.details.presentation.DetailsState
+import zed.rainxch.githubstore.feature.details.presentation.utils.LocalTopbarLiquidState
 
 fun LazyListScope.logs(state: DetailsState) {
     item {
+        val liquidState = LocalTopbarLiquidState.current
+
         HorizontalDivider()
 
         Text(
             text = "Install logs",
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(vertical = 8.dp),
+            modifier = Modifier
+                .padding(vertical = 8.dp)
+                .liquefiable(liquidState),
             fontWeight = FontWeight.Bold,
         )
     }
 
     items(state.installLogs) { log ->
+        val liquidState = LocalTopbarLiquidState.current
+
         Text(
             text = "> ${log.result}: ${log.assetName}",
             style = MaterialTheme.typography.labelSmall.copy(
@@ -33,7 +41,8 @@ fun LazyListScope.logs(state: DetailsState) {
             ),
             color = if (log.result.startsWith("Error")) {
                 MaterialTheme.colorScheme.error
-            } else MaterialTheme.colorScheme.outline
+            } else MaterialTheme.colorScheme.outline,
+            modifier = Modifier.liquefiable(liquidState)
         )
     }
 }
