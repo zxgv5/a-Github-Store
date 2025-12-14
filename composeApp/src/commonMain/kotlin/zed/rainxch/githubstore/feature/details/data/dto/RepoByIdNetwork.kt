@@ -10,6 +10,7 @@ data class RepoByIdNetwork(
     @SerialName("full_name") val fullName: String,
     @SerialName("owner") val owner: OwnerNetwork,
     @SerialName("description") val description: String? = null,
+    @SerialName("default_branch") val defaultBranch: String,
     @SerialName("html_url") val htmlUrl: String,
     @SerialName("stargazers_count") val stars: Int,
     @SerialName("forks_count") val forks: Int,

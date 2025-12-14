@@ -60,11 +60,16 @@ class DetailsRepositoryImpl(
             language = repo.language,
             topics = repo.topics,
             releasesUrl = "https://api.github.com/repos/${repo.owner.login}/${repo.name}/releases{/id}",
-            updatedAt = repo.updatedAt
+            updatedAt = repo.updatedAt,
+            defaultBranch = repo.defaultBranch
         )
     }
 
-    override suspend fun getLatestPublishedRelease(owner: String, repo: String): GithubRelease? {
+    override suspend fun getLatestPublishedRelease(
+        owner: String,
+        repo: String,
+        defaultBranch: String
+    ): GithubRelease? {
         val releasesResult = github.safeApiCall<List<ReleaseNetwork>>(
             rateLimitHandler = appStateManager.rateLimitHandler,
             autoRetryOnRateLimit = false
@@ -99,7 +104,7 @@ class DetailsRepositoryImpl(
                 ?.let { rawMarkdown ->
                     preprocessMarkdown(
                         markdown = rawMarkdown,
-                        baseUrl = "https://raw.githubusercontent.com/$owner/$repo/main/"
+                        baseUrl = "https://raw.githubusercontent.com/$owner/$repo/${defaultBranch}/"
                     )
                 }
         )
@@ -107,13 +112,13 @@ class DetailsRepositoryImpl(
         return processedLatestRelease.toDomain()
     }
 
-    override suspend fun getReadme(owner: String, repo: String): String? {
+    override suspend fun getReadme(owner: String, repo: String, defaultBranch: String): String? {
         return try {
             val rawMarkdownResult = github.safeApiCall<String>(
                 rateLimitHandler = appStateManager.rateLimitHandler,
                 autoRetryOnRateLimit = false
             ) {
-                get("https://raw.githubusercontent.com/$owner/$repo/master/README.md")
+                get("https://raw.githubusercontent.com/$owner/$repo/${defaultBranch}/README.md")
             }
 
             rawMarkdownResult.onFailure { error ->
@@ -122,11 +127,12 @@ class DetailsRepositoryImpl(
                 }
             }
 
-            val rawMarkdown = rawMarkdownResult.getOrNull() ?: throw Exception("Failed to fetch master README")
+            val rawMarkdown =
+                rawMarkdownResult.getOrNull() ?: throw Exception("Failed to fetch ${defaultBranch} README")
 
             preprocessMarkdown(
                 markdown = rawMarkdown,
-                baseUrl = "https://raw.githubusercontent.com/$owner/$repo/master/"
+                baseUrl = "https://raw.githubusercontent.com/$owner/$repo/${defaultBranch}/"
             )
         } catch (_: Throwable) {
             try {
@@ -134,7 +140,7 @@ class DetailsRepositoryImpl(
                     rateLimitHandler = appStateManager.rateLimitHandler,
                     autoRetryOnRateLimit = false
                 ) {
-                    get("https://raw.githubusercontent.com/$owner/$repo/main/README.md")
+                    get("https://raw.githubusercontent.com/$owner/$repo/${defaultBranch}/README.md")
                 }
 
                 rawMarkdownResult.onFailure { error ->
@@ -147,7 +153,7 @@ class DetailsRepositoryImpl(
 
                 preprocessMarkdown(
                     markdown = rawMarkdown,
-                    baseUrl = "https://raw.githubusercontent.com/$owner/$repo/main/"
+                    baseUrl = "https://raw.githubusercontent.com/$owner/$repo/${defaultBranch}/"
                 )
             } catch (_: Throwable) {
                 null

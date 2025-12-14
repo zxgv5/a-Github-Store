@@ -9,6 +9,7 @@ data class GithubRepoSummary(
     val fullName: String,
     val owner: GithubUser,
     val description: String?,
+    val defaultBranch: String,
     val htmlUrl: String,
     val stargazersCount: Int,
     val forksCount: Int,

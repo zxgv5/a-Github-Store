@@ -163,7 +163,8 @@ fun RepositoryCardPreview() {
                 language = "Kotlin",
                 topics = null,
                 releasesUrl = "",
-                updatedAt = ""
+                updatedAt = "",
+                defaultBranch = ""
             ),
             onClick = { }
         )

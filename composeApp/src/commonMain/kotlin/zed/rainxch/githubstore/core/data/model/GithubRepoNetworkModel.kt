@@ -10,6 +10,7 @@ data class GithubRepoNetworkModel(
     @SerialName("full_name") val fullName: String,
     @SerialName("owner") val owner: GithubOwnerNetworkModel,
     @SerialName("description") val description: String? = null,
+    @SerialName("default_branch") val defaultBranch: String,
     @SerialName("html_url") val htmlUrl: String,
     @SerialName("stargazers_count") val stargazersCount: Int,
     @SerialName("forks_count") val forksCount: Int,

@@ -70,7 +70,11 @@ class DetailsViewModel(
 
                 val latestReleaseDeferred = async {
                     try {
-                        detailsRepository.getLatestPublishedRelease(owner, name)
+                        detailsRepository.getLatestPublishedRelease(
+                            owner = owner,
+                            repo = name,
+                            defaultBranch = repo.defaultBranch
+                        )
                     } catch (t: Throwable) {
                         Logger.w { "Failed to load latest release: ${t.message}" }
                         null
@@ -87,7 +91,11 @@ class DetailsViewModel(
 
                 val readmeDeferred = async {
                     try {
-                        detailsRepository.getReadme(owner, name)
+                        detailsRepository.getReadme(
+                            owner = owner,
+                            repo = name,
+                            defaultBranch = repo.defaultBranch
+                        )
                     } catch (t: Throwable) {
                         null
                     }
