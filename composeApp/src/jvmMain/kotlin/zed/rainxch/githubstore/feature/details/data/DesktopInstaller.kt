@@ -32,7 +32,6 @@ class DesktopInstaller(
     }
 
     override fun openInObtainium(repoOwner: String, repoName: String, onOpenInstaller: () -> Unit) {
-        // No-op
     }
 
     override fun isAssetInstallable(assetName: String): Boolean {
@@ -400,19 +399,14 @@ class DesktopInstaller(
         Logger.d { "Installing RPM package: ${file.absolutePath}" }
 
         val installMethods = listOf(
-            // Method 1: pkexec + dnf with --nogpgcheck (bypass signature check)
             listOf("pkexec", "dnf", "install", "-y", "--nogpgcheck", file.absolutePath),
 
-            // Method 2: pkexec + yum with --nogpgcheck (older RHEL/CentOS)
             listOf("pkexec", "yum", "install", "-y", "--nogpgcheck", file.absolutePath),
 
-            // Method 3: pkexec + zypper with --no-gpg-checks (openSUSE)
             listOf("pkexec", "zypper", "install", "-y", "--no-gpg-checks", file.absolutePath),
 
-            // Method 4: pkexec + rpm with --nosignature
             listOf("pkexec", "rpm", "-i", "--nosignature", file.absolutePath),
 
-            // Method 5: Terminal
             null
         )
 
@@ -534,7 +528,6 @@ class DesktopInstaller(
             )
         }
 
-        // Updated command with --nogpgcheck flag
         val command = "echo 'Installing RPM package...'; " +
                 "sudo dnf install -y --nogpgcheck '$filePath' || " +
                 "sudo yum install -y --nogpgcheck '$filePath' || " +
@@ -633,61 +626,52 @@ class DesktopInstaller(
     private fun installAppImage(file: File) {
         Logger.d { "Installing AppImage: ${file.absolutePath}" }
 
-        val desktopDir = getDesktopDirectory()
-        Logger.d { "Desktop directory: ${desktopDir.absolutePath}" }
-        Logger.d { "Desktop exists: ${desktopDir.exists()}, isDirectory: ${desktopDir.isDirectory}, canWrite: ${desktopDir.canWrite()}" }
-
-        val destinationFile = File(desktopDir, file.name)
-
-        val finalDestination = if (destinationFile.exists()) {
-            Logger.d { "File already exists, generating unique name" }
-            generateUniqueFileName(desktopDir, file.name)
-        } else {
-            destinationFile
-        }
-
-        Logger.d { "Final destination: ${finalDestination.absolutePath}" }
-
         try {
-            Logger.d { "Copying file..." }
-            file.copyTo(finalDestination, overwrite = false)
-            Logger.d { "Copy successful, file size: ${finalDestination.length()} bytes" }
+            Logger.d { "Moving AppImage to ~/Applications..." }
+            val installedFile = moveToApplicationsDirectory(file)
+            Logger.d { "Moved to: ${installedFile.absolutePath}" }
 
-            val executableSet = finalDestination.setExecutable(true, false)
-            Logger.d { "Set executable: $executableSet" }
+            Logger.d { "Setting executable permissions..." }
+            val executableSet = installedFile.setExecutable(true, false)
+            Logger.d { "Set executable via Java: $executableSet" }
 
-            if (!finalDestination.exists()) {
-                throw IllegalStateException("File was copied but doesn't exist at destination")
+            if (!executableSet) {
+                Logger.w { "Failed to set executable via Java, trying chmod..." }
+                val chmodProcess = ProcessBuilder("chmod", "+x", installedFile.absolutePath).start()
+                val chmodExitCode = chmodProcess.waitFor()
+                Logger.d { "chmod exit code: $chmodExitCode" }
             }
 
-            try {
-                Logger.d { "Attempting to open desktop folder..." }
-                if (Desktop.isDesktopSupported()) {
-                    Desktop.getDesktop().open(desktopDir)
-                    Logger.d { "Desktop folder opened" }
-                } else {
-                    Logger.w { "Desktop not supported, trying xdg-open" }
-                    ProcessBuilder("xdg-open", desktopDir.absolutePath).start()
-                }
-            } catch (e: Exception) {
-                Logger.w { "Could not open desktop folder: ${e.message}" }
+            if (!installedFile.canExecute()) {
+                throw IllegalStateException("Failed to make AppImage executable")
             }
+
+            Logger.d { "AppImage is now executable" }
+
+            Logger.d { "Launching AppImage..." }
+            val process = ProcessBuilder(installedFile.absolutePath)
+                .inheritIO()
+                .start()
+
+            Logger.d { "AppImage launched successfully (PID: ${process.pid()})" }
+
+            showInstallationNotification(installedFile)
 
             Logger.d { "AppImage installation completed successfully" }
+
         } catch (e: IOException) {
-            Logger.e { "Failed to copy AppImage: ${e.message}" }
+            Logger.e { "Failed to install AppImage: ${e.message}" }
             e.printStackTrace()
             throw IllegalStateException(
-                "Failed to copy AppImage to desktop: ${e.message}. " +
-                        "Desktop path: ${desktopDir.absolutePath}. " +
-                        "Please ensure you have write permissions to your Desktop folder.",
+                "Failed to install AppImage: ${e.message}. " +
+                        "Please ensure you have write permissions to ~/Applications folder.",
                 e
             )
         } catch (e: SecurityException) {
             Logger.e { "Security exception: ${e.message}" }
             e.printStackTrace()
             throw IllegalStateException(
-                "Security restrictions prevent copying AppImage to desktop.",
+                "Security restrictions prevent installing AppImage.",
                 e
             )
         } catch (e: Exception) {
@@ -697,31 +681,66 @@ class DesktopInstaller(
         }
     }
 
-    private fun getDesktopDirectory(): File {
-        try {
-            val process = ProcessBuilder("xdg-user-dir", "DESKTOP").start()
-            val output = process.inputStream.bufferedReader().readText().trim()
-            process.waitFor()
+    /**
+     * Move AppImage to ~/Applications directory
+     * Creates the directory if it doesn't exist
+     */
+    private fun moveToApplicationsDirectory(file: File): File {
+        val homeDir = System.getProperty("user.home")
+        val applicationsDir = File(homeDir, "Applications")
 
-            if (output.isNotEmpty() && output != "DESKTOP") {
-                val xdgDesktop = File(output)
-                if (xdgDesktop.exists() && xdgDesktop.isDirectory) {
-                    return xdgDesktop
-                }
-            }
-        } catch (_: Exception) {
+        if (!applicationsDir.exists()) {
+            Logger.d { "Creating ~/Applications directory..." }
+            val created = applicationsDir.mkdirs()
+            Logger.d { "Directory created: $created" }
         }
 
-        val homeDir = System.getProperty("user.home")
-        val desktopCandidates = listOf(
-            File(homeDir, "Desktop"),
-            File(homeDir, "desktop"),
-            File(homeDir, ".local/share/Desktop"),
-            File(homeDir)
-        )
+        if (file.parent == applicationsDir.absolutePath) {
+            Logger.d { "AppImage already in ~/Applications, no move needed" }
+            return file
+        }
 
-        return desktopCandidates.firstOrNull { it.exists() && it.isDirectory }
-            ?: File(homeDir, "Desktop").also { it.mkdirs() }
+        val destinationFile = File(applicationsDir, file.name)
+        val finalDestination = if (destinationFile.exists()) {
+            Logger.d { "File already exists in ~/Applications, generating unique name" }
+            generateUniqueFileName(applicationsDir, file.name)
+        } else {
+            destinationFile
+        }
+
+        Logger.d { "Moving from: ${file.absolutePath}" }
+        Logger.d { "Moving to: ${finalDestination.absolutePath}" }
+
+        file.copyTo(finalDestination, overwrite = false)
+        Logger.d { "Copy successful, file size: ${finalDestination.length()} bytes" }
+
+        val deleted = file.delete()
+        Logger.d { "Original file deleted: $deleted" }
+
+        if (!finalDestination.exists()) {
+            throw IllegalStateException("File was moved but doesn't exist at destination")
+        }
+
+        return finalDestination
+    }
+
+    private fun showInstallationNotification(file: File) {
+        try {
+            val message = "AppImage installed and launched from ~/Applications"
+
+            Logger.i { message }
+            Logger.i { "Location: ${file.absolutePath}" }
+
+            ProcessBuilder(
+                "notify-send",
+                "-i", "application-x-executable",
+                "AppImage Installed",
+                "Installed to ~/Applications\n\nYou can find it at:\n${file.name}"
+            ).start()
+
+        } catch (e: Exception) {
+            Logger.d { "Could not show notification: ${e.message}" }
+        }
     }
 
     private fun generateUniqueFileName(directory: File, originalName: String): File {
@@ -742,7 +761,7 @@ class DesktopInstaller(
         } while (candidateFile.exists() && counter < 1000)
 
         if (candidateFile.exists()) {
-            throw IllegalStateException("Could not generate unique filename on desktop")
+            throw IllegalStateException("Could not generate unique filename")
         }
 
         return candidateFile
