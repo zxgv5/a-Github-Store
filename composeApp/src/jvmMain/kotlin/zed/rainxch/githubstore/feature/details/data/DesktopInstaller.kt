@@ -67,28 +67,34 @@ class DesktopInstaller(
             }
         }
 
+        // First, filter by architecture compatibility
         val compatibleAssets = assets.filter { asset ->
             isArchitectureCompatible(asset.name.lowercase(), systemArchitecture)
         }
 
+        // If no compatible assets found, fall back to all assets
         val assetsToConsider = compatibleAssets.ifEmpty { assets }
 
+        // Score each asset based on multiple factors
         return assetsToConsider.maxByOrNull { asset ->
             val name = asset.name.lowercase()
 
+            // 1. Extension priority score (most important)
             val extensionIdx = priority.indexOfFirst { name.endsWith(it) }
             val extensionScore = if (extensionIdx == -1) {
-                -100000
+                -100000 // Not a preferred extension
             } else {
                 (priority.size - extensionIdx) * 10000
             }
 
+            // 2. Exact architecture match bonus
             val archScore = if (isExactArchitectureMatch(name, systemArchitecture)) {
                 1000
             } else {
                 0
             }
 
+            // 3. Small bonus for larger files (usually more complete packages)
             val sizeScore = (asset.size / 1000000).coerceAtMost(100)
 
             extensionScore + archScore + sizeScore
@@ -119,17 +125,20 @@ class DesktopInstaller(
         if (platform != PlatformType.LINUX) return LinuxPackageType.UNIVERSAL
 
         return try {
+            // Check for specific distributions first using /etc/os-release
             val osRelease = tryReadOsRelease()
             if (osRelease != null) {
                 val idLike = osRelease["ID_LIKE"]?.lowercase() ?: ""
                 val id = osRelease["ID"]?.lowercase() ?: ""
 
+                // Check for Debian-based distributions
                 if (id in listOf("debian", "ubuntu", "linuxmint", "pop", "elementary") ||
                     idLike.contains("debian") || idLike.contains("ubuntu")) {
                     Logger.d { "Detected Debian-based distribution: $id" }
                     return LinuxPackageType.DEB
                 }
 
+                // Check for RPM-based distributions
                 if (id in listOf("fedora", "rhel", "centos", "rocky", "almalinux", "opensuse", "suse") ||
                     idLike.contains("fedora") || idLike.contains("rhel") ||
                     idLike.contains("suse") || idLike.contains("centos")) {
@@ -138,6 +147,7 @@ class DesktopInstaller(
                 }
             }
 
+            // Fallback: Check for package managers
             if (commandExists("apt") || commandExists("apt-get")) {
                 Logger.d { "Detected package manager: apt" }
                 return LinuxPackageType.DEB
@@ -428,6 +438,7 @@ class DesktopInstaller(
     private fun installDebPackage(file: File) {
         Logger.d { "Installing DEB package: ${file.absolutePath}" }
 
+        // Check if we are on an RPM system trying to install a DEB
         if (linuxPackageType == LinuxPackageType.RPM) {
             Logger.i { "Detected DEB package on RPM system. Initiating conversion flow." }
             openTerminalForAlienConversion(file.absolutePath)
@@ -435,12 +446,16 @@ class DesktopInstaller(
         }
 
         val installMethods = listOf(
+            // Try apt first (most user-friendly on Debian/Ubuntu)
             listOf("pkexec", "apt", "install", "-y", file.absolutePath),
 
+            // Try dpkg + apt-get fix dependencies
             listOf("pkexec", "sh", "-c", "dpkg -i '${file.absolutePath}' || apt-get install -f -y"),
 
+            // Try gdebi if available (handles dependencies well)
             listOf("gdebi-gtk", file.absolutePath),
 
+            // Fallback to terminal
             null
         )
 
@@ -493,6 +508,7 @@ class DesktopInstaller(
             append("echo 'This requires the \"alien\" tool.'; ")
             append("echo ''; ")
 
+            // Install Alien if missing
             append("if ! command -v alien &> /dev/null; then ")
             append("echo 'Installing alien and rpm-build...'; ")
             append("sudo dnf install -y alien rpm-build 2>/dev/null || ")
@@ -500,6 +516,7 @@ class DesktopInstaller(
             append("sudo zypper install -y alien rpm-build 2>/dev/null; ")
             append("fi; ")
 
+            // Check if installation succeeded
             append("if ! command -v alien &> /dev/null; then ")
             append("echo ''; ")
             append("echo 'ERROR: Failed to install alien.'; ")
@@ -508,31 +525,59 @@ class DesktopInstaller(
             append("echo 'Press Enter to close...'; read; exit 1; ")
             append("fi; ")
 
+            // Convert the package
             append("echo ''; ")
             append("echo 'Converting to RPM (this may take a minute)...'; ")
-            append("mkdir -p /tmp/alien_install_$$ && cd /tmp/alien_install_$$ || exit 1; ")
+            append("TMPDIR=/tmp/alien_install_$; ")
+            append($$"mkdir -p \"$TMPDIR\" && cd \"$TMPDIR\" || exit 1; ")
             append("cp '$filePath' ./package.deb; ")
             append("sudo alien -r -c package.deb; ")
 
+            // Check if conversion succeeded
             append("if [ ! -f *.rpm ]; then ")
             append("echo ''; ")
             append("echo 'ERROR: Conversion failed.'; ")
-            append("cd .. && rm -rf /tmp/alien_install_$$; ")
+            append($$"cd .. && rm -rf \"$TMPDIR\"; ")
             append("echo 'Press Enter to close...'; read; exit 1; ")
             append("fi; ")
 
+            // Install the converted package with proper error checking
             append("echo ''; ")
             append("echo 'Installing converted RPM...'; ")
-            append("sudo dnf install -y ./*.rpm 2>/dev/null || ")
-            append("sudo yum install -y ./*.rpm 2>/dev/null || ")
-            append("sudo zypper install -y --allow-unsigned-rpm ./*.rpm 2>/dev/null || ")
-            append("sudo rpm -ivh --nodeps ./*.rpm; ")
+            append("INSTALL_SUCCESS=0; ")
 
+            // Try each package manager and check for success
+            append("if sudo dnf install -y ./*.rpm 2>&1; then INSTALL_SUCCESS=1; ")
+            append("elif sudo yum install -y ./*.rpm 2>&1; then INSTALL_SUCCESS=1; ")
+            append("elif sudo zypper install -y --allow-unsigned-rpm ./*.rpm 2>&1; then INSTALL_SUCCESS=1; ")
+            append("elif sudo rpm -ivh --nodeps --force ./*.rpm 2>&1; then INSTALL_SUCCESS=1; ")
+            append("fi; ")
+
+            // Check if installation was successful
             append("echo ''; ")
-            append("cd .. && rm -rf /tmp/alien_install_$$; ")
+            append($$"if [ $INSTALL_SUCCESS -eq 1 ]; then ")
             append("echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'; ")
             append("echo 'Installation Complete!'; ")
             append("echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'; ")
+            append("else ")
+            append("echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'; ")
+            append("echo 'Installation Failed!'; ")
+            append("echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'; ")
+            append("echo ''; ")
+            append("echo 'The RPM was created but installation failed.'; ")
+            append("echo 'This usually happens due to file conflicts.'; ")
+            append("echo ''; ")
+            append("echo 'The converted RPM is located at:'; ")
+            append($$"echo \"$TMPDIR/\"*.rpm; ")
+            append("echo ''; ")
+            append("echo 'You can try installing it manually with:'; ")
+            append($$"echo \"sudo rpm -ivh --force $TMPDIR/\"*.rpm; ")
+            append("echo ''; ")
+            append("echo 'Or open the file with your software manager.'; ")
+            append("fi; ")
+
+            // Cleanup
+            append($$"cd .. && rm -rf \"$TMPDIR\"; ")
             append("echo ''; ")
             append("echo 'Press Enter to close...'; read")
         }
@@ -544,14 +589,19 @@ class DesktopInstaller(
         Logger.d { "Installing RPM package: ${file.absolutePath}" }
 
         val installMethods = listOf(
+            // Try dnf first (Fedora, RHEL 8+, CentOS 8+)
             listOf("pkexec", "dnf", "install", "-y", "--nogpgcheck", file.absolutePath),
 
+            // Try yum (older RHEL/CentOS)
             listOf("pkexec", "yum", "install", "-y", "--nogpgcheck", file.absolutePath),
 
+            // Try zypper (openSUSE)
             listOf("pkexec", "zypper", "install", "-y", "--no-gpg-checks", file.absolutePath),
 
+            // Direct rpm install (last resort)
             listOf("pkexec", "rpm", "-ivh", "--nosignature", file.absolutePath),
 
+            // Fallback to terminal
             null
         )
 
@@ -708,7 +758,6 @@ class DesktopInstaller(
             Logger.w { "Could not copy to clipboard: ${e.message}" }
         }
     }
-
 
     private fun installAppImage(file: File) {
         Logger.d { "Installing AppImage: ${file.absolutePath}" }
