@@ -57,7 +57,7 @@ class SearchViewModel(
         }
     }
 
-    private fun performSearch(isInitial: Boolean = false) {
+    private fun performSearch(isInitial:  Boolean = false) {
         if (_state.value.search.isBlank()) {
             _state.update {
                 it.copy(
@@ -70,7 +70,9 @@ class SearchViewModel(
             return
         }
 
-        currentSearchJob?.cancel()
+        if (isInitial) {
+            currentSearchJob?.cancel()
+        }
 
         if (isInitial) {
             currentPage = 1
@@ -80,7 +82,7 @@ class SearchViewModel(
             _state.update {
                 it.copy(
                     isLoading = isInitial,
-                    isLoadingMore = !isInitial,
+                    isLoadingMore = ! isInitial,
                     errorMessage = null,
                     repositories = if (isInitial) emptyList() else it.repositories
                 )
@@ -97,13 +99,13 @@ class SearchViewModel(
                         page = currentPage
                     )
                     .collectLatest { paginatedRepos ->
-                        if (!isActive) return@collectLatest
+                        if (! isActive) return@collectLatest
 
                         val newReposWithStatus = coroutineScope {
                             paginatedRepos.repos.map { repo ->
                                 async(Dispatchers.IO) {
                                     val app = installedMap[repo.id]
-                                    val isUpdateAvailable = if (app?.packageName != null) {
+                                    val isUpdateAvailable = if (app?. packageName != null) {
                                         installedAppsRepository.checkForUpdates(app.packageName)
                                     } else false
 
@@ -113,7 +115,7 @@ class SearchViewModel(
                                         repo = repo
                                     )
                                 }
-                            }.awaitAll()
+                            }. awaitAll()
                         }
 
                         _state.update { currentState ->
@@ -126,11 +128,11 @@ class SearchViewModel(
                             newReposWithStatus.forEach { r ->
                                 val existing = mergedMap[r.repo.id]
                                 if (existing == null) {
-                                    mergedMap[r.repo.id] = r
+                                    mergedMap[r.repo. id] = r
                                 } else {
                                     mergedMap[r.repo.id] = existing.copy(
                                         isInstalled = r.isInstalled,
-                                        isUpdateAvailable = r.isUpdateAvailable,
+                                        isUpdateAvailable = r. isUpdateAvailable,
                                         repo = r.repo
                                     )
                                 }
@@ -144,7 +146,7 @@ class SearchViewModel(
                                 isLoadingMore = false,
                                 hasMorePages = paginatedRepos.hasMore,
                                 totalCount = paginatedRepos.totalCount,
-                                errorMessage = if (allRepos.isEmpty() && !paginatedRepos.hasMore) {
+                                errorMessage = if (allRepos.isEmpty() && !paginatedRepos. hasMore) {
                                     "No repositories found"
                                 } else null
                             )
