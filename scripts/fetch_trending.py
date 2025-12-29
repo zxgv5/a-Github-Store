@@ -199,115 +199,134 @@ def build_query(base_query: str, topics: List[str]) -> str:
     if len(topics) == 1:
         topic_query = f"topic:{topics[0]}"
     else:
-        # GitHub search supports OR with spaces between topics
         topic_parts = [f"topic:{topic}" for topic in topics]
         topic_query = " OR ".join(topic_parts)
         topic_query = f"({topic_query})"
 
     return f"{base_query} {topic_query}"
 
-def fetch_trending_repos(platform: str, desired_count: int = 30) -> List[Dict]:
+def fetch_trending_repos(platform: str, desired_count: int = 80) -> List[Dict]:
     """Fetch trending repositories for a specific platform"""
     print(f"\n{'='*60}")
     print(f"Fetching trending repos for {platform.upper()}")
     print(f"{'='*60}")
 
-    # Calculate date 7 days ago
-    seven_days_ago = (datetime.utcnow() - timedelta(days=7)).strftime('%Y-%m-%d')
-
+    url = 'https://api.github.com/search/repositories'
     topics = PLATFORMS[platform]['topics']
-    base_query = f'stars:>500 archived:false pushed:>={seven_days_ago}'
-    query = build_query(base_query, topics)
 
-    print(f"Query: {query}")
+    results: List[Dict] = []
+    seen: set = set()
+    attempt = 0
+    max_attempts = 4
+    min_count = 10  # Ensure at least this many if possible
 
-    results = []
-    page = 1
-    max_pages = 5
+    while len(results) < desired_count and attempt < max_attempts:
+        attempt += 1
+        days = 7 * (2 ** (attempt - 1))  # 7, 14, 28, 56
+        stars_min = max(500 // (2 ** (attempt - 1)), 50)  # 500, 250, 125, 62 -> min 50
+        current_topics = topics if attempt < 3 else []  # Drop topics on later attempts to broaden search
 
-    while len(results) < desired_count and page <= max_pages:
-        print(f"\nFetching API page {page}...")
+        past_date = (datetime.utcnow() - timedelta(days=days)).strftime('%Y-%m-%d')
+        base_query = f'stars:>{stars_min} archived:false pushed:>={past_date}'
+        query = build_query(base_query, current_topics)
 
-        url = 'https://api.github.com/search/repositories'
-        params = {
-            'q': query,
-            'sort': 'stars',
-            'order': 'desc',
-            'per_page': 100,
-            'page': page
-        }
+        print(f"Attempt {attempt}: days={days}, stars>{stars_min}, topics={current_topics or 'none'}")
+        print(f"Query: {query}")
 
-        response, error = make_request_with_retry(url, params=params, timeout=30)
+        page = 1
+        max_pages = 10  # Increased to allow more candidates
 
-        if response is None:
-            print(f"Failed to fetch page {page}: {error}")
-            break
+        while len(results) < desired_count and page <= max_pages:
+            print(f"\nFetching API page {page}...")
 
-        try:
-            data = response.json()
-            items = data.get('items', [])
+            params = {
+                'q': query,
+                'sort': 'stars',
+                'order': 'desc',
+                'per_page': 100,
+                'page': page
+            }
 
-            print(f"Got {len(items)} repositories from API")
+            response, error = make_request_with_retry(url, params=params, timeout=30)
 
-            if not items:
+            if response is None:
+                print(f"Failed to fetch page {page}: {error}")
                 break
 
-            # Score and filter candidates
-            candidates = []
-            for repo in items:
-                score = calculate_platform_score(repo, platform)
-                if score > 0:
-                    candidates.append((repo, score))
+            try:
+                data = response.json()
+                items = data.get('items', [])
 
-            # Sort by score and take top 50
-            candidates.sort(key=lambda x: x[1], reverse=True)
-            candidates = [repo for repo, _ in candidates[:50]]
+                print(f"Got {len(items)} repositories from API")
 
-            print(f"Checking {len(candidates)} candidates for installers...")
-
-            # Check each candidate for installers
-            for repo in candidates:
-                if len(results) >= desired_count:
+                if not items:
                     break
 
-                owner = repo['owner']['login']
-                name = repo['name']
+                # Score and filter candidates
+                candidates = []
+                for repo in items:
+                    score = calculate_platform_score(repo, platform)
+                    if score >= 5:
+                        candidates.append((repo, score))
 
-                print(f"Checking {owner}/{name}...", end=' ')
+                # Sort by score and take top 50
+                candidates.sort(key=lambda x: x[1], reverse=True)
+                candidates = [repo for repo, _ in candidates[:50]]
 
-                if check_repo_has_installers(owner, name, platform):
-                    # Transform to summary format
-                    summary = {
-                        'id': repo['id'],
-                        'name': repo['name'],
-                        'fullName': repo['full_name'],
-                        'owner': {
-                            'login': repo['owner']['login'],
-                            'avatarUrl': repo['owner']['avatar_url']
-                        },
-                        'description': repo.get('description'),
-                        'defaultBranch': repo.get('default_branch', 'main'),
-                        'htmlUrl': repo['html_url'],
-                        'stargazersCount': repo['stargazers_count'],
-                        'forksCount': repo['forks_count'],
-                        'language': repo.get('language'),
-                        'topics': repo.get('topics', []),
-                        'releasesUrl': repo['releases_url'],
-                        'updatedAt': repo['updated_at']
-                    }
-                    results.append(summary)
-                    print(f"✓ Found ({len(results)}/{desired_count})")
-                else:
-                    print("✗ No installers")
+                print(f"Checking {len(candidates)} candidates for installers...")
 
-                # Small delay to avoid rate limiting
-                time.sleep(0.5)
+                # Check each candidate for installers
+                for repo in candidates:
+                    if len(results) >= desired_count:
+                        break
 
-            page += 1
+                    full_name = repo['full_name']
+                    if full_name in seen:
+                        continue
 
-        except Exception as e:
-            print(f"Error processing page {page}: {e}", file=sys.stderr)
-            break
+                    owner = repo['owner']['login']
+                    name = repo['name']
+
+                    print(f"Checking {owner}/{name}...", end=' ')
+
+                    if check_repo_has_installers(owner, name, platform):
+                        # Transform to summary format
+                        summary = {
+                            'id': repo['id'],
+                            'name': repo['name'],
+                            'fullName': full_name,
+                            'owner': {
+                                'login': owner,
+                                'avatarUrl': repo['owner']['avatar_url']
+                            },
+                            'description': repo.get('description'),
+                            'defaultBranch': repo.get('default_branch', 'main'),
+                            'htmlUrl': repo['html_url'],
+                            'stargazersCount': repo['stargazers_count'],
+                            'forksCount': repo['forks_count'],
+                            'language': repo.get('language'),
+                            'topics': repo.get('topics', []),
+                            'releasesUrl': repo['releases_url'],
+                            'updatedAt': repo['updated_at']
+                        }
+                        results.append(summary)
+                        seen.add(full_name)
+                        print(f"✓ Found ({len(results)}/{desired_count}) {full_name}")
+                    else:
+                        print(f"✗ No installers {full_name}")
+
+                    seen.add(full_name)  # Add to seen even if no installers to avoid rechecking
+                    time.sleep(0.5)
+
+                page += 1
+
+            except Exception as e:
+                print(f"Error processing page {page}: {e}", file=sys.stderr)
+                break
+
+    # Sort final results by stargazers count descending and truncate to desired count
+    results.sort(key=lambda x: x['stargazersCount'], reverse=True)
+    results = results[:desired_count]
 
     print(f"\n{'='*60}")
     print(f"Total found: {len(results)} repositories for {platform}")
@@ -322,7 +341,7 @@ def main():
     for platform in PLATFORMS.keys():
         print(f"\nProcessing {platform}...")
 
-        repos = fetch_trending_repos(platform, desired_count=30)
+        repos = fetch_trending_repos(platform, desired_count=80)
 
         output = {
             'platform': platform,

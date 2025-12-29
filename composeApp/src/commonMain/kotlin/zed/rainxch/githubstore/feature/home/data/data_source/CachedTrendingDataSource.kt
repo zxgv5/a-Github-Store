@@ -1,30 +1,24 @@
 package zed.rainxch.githubstore.feature.home.data.data_source
 
-/**
- * Data source for fetching pre-cached trending repositories from GitHub
- */
 import co.touchlab.kermit.Logger
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.request.get
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import zed.rainxch.githubstore.core.domain.Platform
 import zed.rainxch.githubstore.core.domain.model.GithubRepoSummary
+import zed.rainxch.githubstore.core.domain.model.GithubUser
 import zed.rainxch.githubstore.core.domain.model.PlatformType
 
-/**
- * Data source for fetching pre-cached trending repositories from GitHub
- * Uses a dedicated HTTP client (not the GitHub API client) since this fetches
- * static JSON files from raw.githubusercontent.com (no auth or rate limits needed)
- */
 class CachedTrendingDataSource(
     private val platform: Platform
 ) {
@@ -34,10 +28,6 @@ class CachedTrendingDataSource(
     }
 
     private val httpClient = HttpClient {
-        install(ContentNegotiation) {
-            json(json)
-        }
-
         install(HttpTimeout) {
             requestTimeoutMillis = 15_000
             connectTimeoutMillis = 10_000
@@ -71,33 +61,47 @@ class CachedTrendingDataSource(
 
                 val url = "$baseUrl/$platformName.json"
 
-                Logger.d { "Fetching cached trending repos from: $url" }
+                Logger.d { "🔍 Fetching cached trending repos from: $url" }
 
                 val response: HttpResponse = httpClient.get(url)
 
+                Logger.d { "📥 Response status: ${response.status.value} ${response.status.description}" }
+
                 when {
                     response.status.isSuccess() -> {
-                        val cachedData = response.body<CachedRepoResponse>()
+                        val responseText = response.bodyAsText()
+                        Logger.d { "📄 Response body length: ${responseText.length} characters" }
+
+                        val cachedData = json.decodeFromString<CachedRepoResponse>(responseText)
 
                         Logger.d { "✓ Successfully loaded ${cachedData.repositories.size} cached repos" }
-                        Logger.d { "Last updated: ${cachedData.lastUpdated}" }
+                        Logger.d { "✓ Last updated: ${cachedData.lastUpdated}" }
 
                         cachedData
                     }
                     response.status.value == 404 -> {
-                        Logger.w { "Cached data not found (404) - may not be generated yet" }
+                        Logger.w { "⚠️ Cached data not found (404) - may not be generated yet" }
+                        Logger.w { "⚠️ URL attempted: $url" }
                         null
                     }
                     else -> {
-                        Logger.e { "Failed to fetch cached repos: HTTP ${response.status.value}" }
+                        val errorBody = response.bodyAsText()
+                        Logger.e { "❌ Failed to fetch cached repos: HTTP ${response.status.value}" }
+                        Logger.e { "❌ Response body: ${errorBody.take(500)}" }
                         null
                     }
                 }
             } catch (e: HttpRequestTimeoutException) {
-                Logger.e { "Timeout fetching cached trending repos" }
+                Logger.e { "⏱️ Timeout fetching cached trending repos: ${e.message}" }
+                e.printStackTrace()
+                null
+            } catch (e: SerializationException) {
+                Logger.e { "🔧 JSON parsing error: ${e.message}" }
+                e.printStackTrace()
                 null
             } catch (e: Exception) {
-                Logger.e { "Error fetching cached trending repos: ${e.message}" }
+                Logger.e { "💥 Error fetching cached trending repos: ${e.message}" }
+                Logger.e { "💥 Exception type: ${e::class.simpleName}" }
                 e.printStackTrace()
                 null
             }
@@ -112,10 +116,70 @@ class CachedTrendingDataSource(
     }
 }
 
+/**
+ * Cached repository data for a specific platform
+ */
 @Serializable
 data class CachedRepoResponse(
     val platform: String,
     val lastUpdated: String,
     val totalCount: Int,
-    val repositories: List<GithubRepoSummary>
+    val repositories: List<CachedGithubRepoSummary>
 )
+
+/**
+ * Simplified repo summary for cached data
+ * Only includes the fields present in the cached JSON files
+ */
+@Serializable
+data class CachedGithubRepoSummary(
+    val id: Long,
+    val name: String,
+    val fullName: String,
+    val owner: CachedGithubOwner,
+    val description: String?,
+    val defaultBranch: String,
+    val htmlUrl: String,
+    val stargazersCount: Int,
+    val forksCount: Int,
+    val language: String?,
+    val topics: List<String>?,
+    val releasesUrl: String,
+    val updatedAt: String
+)
+
+/**
+ * Simplified owner data for cached repos
+ * Only includes login and avatarUrl (not id and htmlUrl)
+ */
+@Serializable
+data class CachedGithubOwner(
+    val login: String,
+    val avatarUrl: String
+)
+
+/**
+ * Extension to convert cached summary to full GithubRepoSummary
+ */
+fun CachedGithubRepoSummary.toGithubRepoSummary(): GithubRepoSummary {
+    return GithubRepoSummary(
+        id = id,
+        name = name,
+        fullName = fullName,
+        owner = GithubUser(
+            id = 0,
+            login = owner.login,
+            avatarUrl = owner.avatarUrl,
+            htmlUrl = "https://github.com/${owner.login}"
+        ),
+        description = description,
+        defaultBranch = defaultBranch,
+        htmlUrl = htmlUrl,
+        stargazersCount = stargazersCount,
+        forksCount = forksCount,
+        language = language,
+        topics = topics,
+        releasesUrl = releasesUrl,
+        updatedAt = updatedAt
+    )
+}

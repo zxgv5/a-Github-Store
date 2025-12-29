@@ -32,6 +32,7 @@ import zed.rainxch.githubstore.core.data.model.GithubRepoSearchResponse
 import zed.rainxch.githubstore.core.domain.Platform
 import zed.rainxch.githubstore.core.domain.model.PlatformType
 import zed.rainxch.githubstore.feature.home.data.data_source.CachedTrendingDataSource
+import zed.rainxch.githubstore.feature.home.data.data_source.toGithubRepoSummary
 import zed.rainxch.githubstore.feature.home.domain.repository.HomeRepository
 import zed.rainxch.githubstore.feature.home.domain.model.PaginatedRepos
 import zed.rainxch.githubstore.network.RateLimitException
@@ -57,9 +58,11 @@ class HomeRepositoryImpl(
             if (cachedData != null && cachedData.repositories.isNotEmpty()) {
                 Logger.d { "Using cached data: ${cachedData.repositories.size} repos" }
 
+                val repos = cachedData.repositories.map { it.toGithubRepoSummary() }
+
                 emit(
                     PaginatedRepos(
-                        repos = cachedData.repositories,
+                        repos = repos,
                         hasMore = false,
                         nextPageIndex = 2
                     )
