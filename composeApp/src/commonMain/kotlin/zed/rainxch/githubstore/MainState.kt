@@ -11,5 +11,6 @@ data class MainState(
     val showRateLimitDialog: Boolean = false,
     val currentColorTheme: AppTheme = AppTheme.OCEAN,
     val isAmoledTheme: Boolean = false,
+    val isDarkTheme: Boolean? = null,
     val currentFontTheme: FontTheme = FontTheme.CUSTOM,
 )

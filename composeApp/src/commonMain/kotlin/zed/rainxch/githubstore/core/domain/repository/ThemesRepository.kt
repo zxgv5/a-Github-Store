@@ -7,6 +7,8 @@ import zed.rainxch.githubstore.core.presentation.model.FontTheme
 interface ThemesRepository {
     fun getThemeColor(): Flow<AppTheme>
     suspend fun setThemeColor(theme: AppTheme)
+    fun getIsDarkTheme(): Flow<Boolean?>
+    suspend fun setDarkTheme(isDarkTheme: Boolean?)
     fun getAmoledTheme(): Flow<Boolean>
     suspend fun setAmoledTheme(enabled: Boolean)
     fun getFontTheme(): Flow<FontTheme>

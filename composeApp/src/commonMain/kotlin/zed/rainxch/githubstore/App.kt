@@ -1,5 +1,6 @@
 package zed.rainxch.githubstore
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularWavyProgressIndicator
@@ -39,6 +40,7 @@ fun App(
         fontTheme = state.currentFontTheme,
         appTheme = state.currentColorTheme,
         isAmoledTheme = state.isAmoledTheme,
+        isDarkTheme = state.isDarkTheme ?: isSystemInDarkTheme()
     ) {
         LaunchedEffect(state.isCheckingAuth) {
             if (!state.isCheckingAuth) {

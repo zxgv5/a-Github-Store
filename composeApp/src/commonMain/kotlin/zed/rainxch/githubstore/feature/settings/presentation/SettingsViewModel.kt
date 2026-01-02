@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import zed.rainxch.githubstore.core.domain.repository.ThemesRepository
 import zed.rainxch.githubstore.core.presentation.utils.BrowserHelper
 import zed.rainxch.githubstore.feature.settings.domain.repository.SettingsRepository
+import zed.rainxch.githubstore.feature.settings.presentation.SettingsEvent.*
 
 class SettingsViewModel(
     private val browserHelper: BrowserHelper,
@@ -68,6 +69,14 @@ class SettingsViewModel(
         }
 
         viewModelScope.launch {
+            themesRepository.getIsDarkTheme().collect { isDarkTheme ->
+                _state.update {
+                    it.copy(isDarkTheme = isDarkTheme)
+                }
+            }
+        }
+
+        viewModelScope.launch {
             themesRepository.getFontTheme().collect { fontTheme ->
                 _state.update {
                     it.copy(selectedFontTheme = fontTheme)
@@ -114,7 +123,7 @@ class SettingsViewModel(
                     }.onFailure { error ->
                         _state.update { it.copy(isLogoutDialogVisible = false) }
                         error.message?.let {
-                            _events.send(SettingsEvent.OnLogoutError(it))
+                            _events.send(OnLogoutError(it))
                         }
                     }
                 }
@@ -135,6 +144,12 @@ class SettingsViewModel(
             is SettingsAction.OnFontThemeSelected -> {
                 viewModelScope.launch {
                     themesRepository.setFontTheme(action.fontTheme)
+                }
+            }
+
+            is SettingsAction.OnDarkThemeChange -> {
+                viewModelScope.launch {
+                    themesRepository.setDarkTheme(action.isDarkTheme)
                 }
             }
         }

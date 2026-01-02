@@ -1,8 +1,21 @@
 package zed.rainxch.githubstore.feature.settings.presentation.components.sections
 
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,10 +28,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Colorize
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -27,11 +44,19 @@ import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.material3.toShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import githubstore.composeapp.generated.resources.Res
 import githubstore.composeapp.generated.resources.amoled_black_description
@@ -50,191 +75,349 @@ fun LazyListScope.appearance(
     selectedThemeColor: AppTheme,
     isAmoledThemeEnabled: Boolean,
     onAmoledThemeToggled: (Boolean) -> Unit,
+    isDarkTheme: Boolean?,
+    onDarkThemeChange: (Boolean?) -> Unit,
     onThemeColorSelected: (AppTheme) -> Unit,
     isUsingSystemFont: Boolean,
     onUseSystemFontToggled: (Boolean) -> Unit,
 ) {
     item {
-        Text(
-            text = stringResource(Res.string.section_appearance),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.outline,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 8.dp)
+        SectionHeader(stringResource(Res.string.section_appearance))
+
+        VerticalSpacer(8.dp)
+
+        ThemeSelectionCard(
+            isDarkTheme = isDarkTheme,
+            onDarkThemeChange = onDarkThemeChange
         )
 
-        Spacer(Modifier.height(8.dp))
+        VerticalSpacer(16.dp)
 
-        ElevatedCard(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            ),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp)
-            ) {
-                Text(
-                    text = stringResource(Res.string.theme_color),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+        ThemeColorCard(
+            selectedThemeColor = selectedThemeColor,
+            isDarkTheme = isDarkTheme,
+            onThemeColorSelected = onThemeColorSelected
+        )
 
-                Spacer(Modifier.height(8.dp))
+        VerticalSpacer(16.dp)
 
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(20.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val availableThemes = if (isDynamicColorAvailable()) {
-                        AppTheme.entries
-                    } else {
-                        AppTheme.entries.filter { it != AppTheme.DYNAMIC }
-                    }
+        if (isDarkTheme == true || (isDarkTheme == null && isSystemInDarkTheme())) {
+            ToggleSettingCard(
+                title = stringResource(Res.string.amoled_black_theme),
+                description = stringResource(Res.string.amoled_black_description),
+                checked = isAmoledThemeEnabled,
+                onCheckedChange = onAmoledThemeToggled
+            )
 
-                    items(availableThemes) { theme ->
-                        Column(
-                            modifier = Modifier
-                                .clickable(onClick = {
-                                    onThemeColorSelected(theme)
-                                }),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                Modifier
-                                    .size(50.dp)
-                                    .clip(
-                                        if (selectedThemeColor == theme) {
-                                            MaterialShapes.Cookie9Sided.toShape()
-                                        } else CircleShape
-                                    )
-                                    .background(
-                                        color = theme.primaryColor
-                                            ?: MaterialTheme.colorScheme.primary
-                                    )
-                                    .then(
-                                        if (theme == AppTheme.DYNAMIC) {
-                                            Modifier.border(
-                                                2.dp,
-                                                MaterialTheme.colorScheme.outline,
-                                                CircleShape
-                                            )
-                                        } else Modifier
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (selectedThemeColor == theme) {
-                                    Icon(
-                                        imageVector = Icons.Default.Done,
-                                        contentDescription = stringResource(
-                                            Res.string.selected_color,
-                                            theme.displayName()
-                                        ),
-                                        modifier = Modifier.size(24.dp),
-                                        tint = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                }
-                            }
-
-                            Text(
-                                text = theme.displayName(),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-            }
+            VerticalSpacer(16.dp)
         }
 
-        Spacer(Modifier.height(12.dp))
+        ToggleSettingCard(
+            title = stringResource(Res.string.system_font),
+            description = stringResource(Res.string.system_font_description),
+            checked = isUsingSystemFont,
+            onCheckedChange = onUseSystemFontToggled
+        )
+    }
+}
 
-        ElevatedCard(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            ),
-            shape = RoundedCornerShape(16.dp)
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(start = 8.dp)
+    )
+}
+
+@Composable
+private fun VerticalSpacer(height: Dp) {
+    Spacer(Modifier.height(height))
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ThemeSelectionCard(
+    isDarkTheme: Boolean?,
+    onDarkThemeChange: (Boolean?) -> Unit
+) {
+    ExpressiveCard {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        onAmoledThemeToggled(!isAmoledThemeEnabled)
-                    }
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = stringResource(Res.string.amoled_black_theme),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+            ThemeModeOption(
+                icon = Icons.Default.LightMode,
+                label = "Light",
+                isSelected = isDarkTheme != null && !isDarkTheme,
+                onClick = { onDarkThemeChange(false) },
+                modifier = Modifier.weight(1f)
+            )
 
-                    Spacer(Modifier.height(4.dp))
+            ThemeModeOption(
+                icon = Icons.Default.DarkMode,
+                label = "Dark",
+                isSelected = isDarkTheme == true,
+                onClick = { onDarkThemeChange(true) },
+                modifier = Modifier.weight(1f)
+            )
 
-                    Text(
-                        text = stringResource(Res.string.amoled_black_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Switch(
-                    checked = isAmoledThemeEnabled,
-                    onCheckedChange = onAmoledThemeToggled
-                )
-            }
+            ThemeModeOption(
+                icon = Icons.Default.Colorize,
+                label = "System",
+                isSelected = isDarkTheme == null,
+                onClick = { onDarkThemeChange(null) },
+                modifier = Modifier.weight(1f)
+            )
         }
-        Spacer(Modifier.height(12.dp))
+    }
+}
 
-        ElevatedCard(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            ),
-            shape = RoundedCornerShape(16.dp)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ThemeModeOption(
+    icon: ImageVector,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.05f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+
+    Column(
+        modifier = modifier
+            .scale(scale)
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                if (isSelected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surface
+                }
+            )
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = if (isSelected) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+        )
+
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            color = if (isSelected) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ThemeColorCard(
+    selectedThemeColor: AppTheme,
+    isDarkTheme: Boolean?,
+    onThemeColorSelected: (AppTheme) -> Unit
+) {
+    ExpressiveCard {
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        onUseSystemFontToggled(!isUsingSystemFont)
-                    }
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+            Text(
+                text = stringResource(Res.string.theme_color),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            VerticalSpacer(12.dp)
+
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = stringResource(Res.string.system_font),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(Modifier.height(4.dp))
-
-                    Text(
-                        text = stringResource(Res.string.system_font_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                val availableThemes = if (isDynamicColorAvailable()) {
+                    AppTheme.entries
+                } else {
+                    AppTheme.entries.filter { it != AppTheme.DYNAMIC }
                 }
 
-                Switch(
-                    checked = isUsingSystemFont,
-                    onCheckedChange = onUseSystemFontToggled
-                )
+                items(availableThemes) { theme ->
+                    ThemeColorOption(
+                        theme = theme,
+                        isSelected = selectedThemeColor == theme,
+                        onClick = { onThemeColorSelected(theme) }
+                    )
+                }
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ThemeColorOption(
+    theme: AppTheme,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.1f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+
+    Column(
+        modifier = Modifier.clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .scale(scale)
+                .clip(
+                    if (isSelected) {
+                        MaterialShapes.Cookie9Sided.toShape()
+                    } else {
+                        CircleShape
+                    }
+                )
+                .background(
+                    color = theme.primaryColor ?: MaterialTheme.colorScheme.primary
+                )
+                .then(
+                    if (theme == AppTheme.DYNAMIC) {
+                        Modifier.border(
+                            2.dp,
+                            MaterialTheme.colorScheme.outline,
+                            if (isSelected) {
+                                MaterialShapes.Cookie9Sided.toShape()
+                            } else {
+                                CircleShape
+                            }
+                        )
+                    } else Modifier
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isSelected,
+                enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
+                exit = scaleOut() + fadeOut()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Done,
+                    contentDescription = stringResource(
+                        Res.string.selected_color,
+                        theme.displayName()
+                    ),
+                    modifier = Modifier.size(28.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
+
+        Text(
+            text = theme.displayName(),
+            style = MaterialTheme.typography.labelLarge,
+            color = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+        )
+    }
+}
+
+@Composable
+private fun ToggleSettingCard(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    ExpressiveCard {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = checked,
+                    onValueChange = onCheckedChange,
+                    role = Role.Switch,
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple()
+                )
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 16.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                VerticalSpacer(4.dp)
+
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Switch(
+                checked = checked,
+                onCheckedChange = null
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExpressiveCard(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        shape = RoundedCornerShape(20.dp),
+        content = { content() }
+    )
 }

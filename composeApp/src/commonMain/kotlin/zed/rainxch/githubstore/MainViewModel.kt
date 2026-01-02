@@ -71,6 +71,15 @@ class MainViewModel(
                     }
                 }
         }
+        viewModelScope.launch {
+            themesRepository
+                .getIsDarkTheme()
+                .collect { isDarkTheme ->
+                    _state.update {
+                        it.copy(isDarkTheme = isDarkTheme)
+                    }
+                }
+        }
 
         viewModelScope.launch(Dispatchers.IO) {
             appStateManager.appState.collect { appState ->

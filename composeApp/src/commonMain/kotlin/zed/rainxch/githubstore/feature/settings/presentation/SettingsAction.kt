@@ -7,6 +7,7 @@ sealed interface SettingsAction {
     data object OnNavigateBackClick : SettingsAction
     data class OnThemeColorSelected(val themeColor: AppTheme) : SettingsAction
     data class OnAmoledThemeToggled(val enabled: Boolean) : SettingsAction
+    data class OnDarkThemeChange(val isDarkTheme: Boolean?) : SettingsAction
     data object OnLogoutClick : SettingsAction
     data object OnLogoutConfirmClick : SettingsAction
     data object OnLogoutDismiss : SettingsAction

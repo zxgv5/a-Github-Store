@@ -111,29 +111,7 @@ fun SettingsScreen(
             SnackbarHost(hostState = snackbarState)
         },
         topBar = {
-            CenterAlignedTopAppBar(
-                navigationIcon = {
-                    IconButton(
-                        shapes = IconButtonDefaults.shapes(),
-                        onClick = {
-                            onAction(SettingsAction.OnNavigateBackClick)
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(Res.string.navigate_back),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                },
-                title = {
-                    Text(
-                        text = stringResource(Res.string.settings_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            )
+            TopAppBar(onAction)
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
@@ -151,6 +129,10 @@ fun SettingsScreen(
                 isAmoledThemeEnabled = state.isAmoledThemeEnabled,
                 onAmoledThemeToggled = { enabled ->
                     onAction(SettingsAction.OnAmoledThemeToggled(enabled))
+                },
+                isDarkTheme = state.isDarkTheme,
+                onDarkThemeChange = { isDarkTheme ->
+                    onAction(SettingsAction.OnDarkThemeChange(isDarkTheme))
                 },
                 isUsingSystemFont = state.selectedFontTheme == FontTheme.SYSTEM,
                 onUseSystemFontToggled = { enabled ->
@@ -183,6 +165,34 @@ fun SettingsScreen(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun TopAppBar(onAction: (SettingsAction) -> Unit) {
+    CenterAlignedTopAppBar(
+        navigationIcon = {
+            IconButton(
+                shapes = IconButtonDefaults.shapes(),
+                onClick = {
+                    onAction(SettingsAction.OnNavigateBackClick)
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(Res.string.navigate_back),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        },
+        title = {
+            Text(
+                text = stringResource(Res.string.settings_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    )
 }
 
 @Preview

@@ -1,7 +1,6 @@
 package zed.rainxch.githubstore.core.presentation.theme
 
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
@@ -406,7 +405,7 @@ val amberOrangeDark = darkColorScheme(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun GithubStoreTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    isDarkTheme: Boolean = false,
     appTheme: AppTheme = AppTheme.OCEAN,
     fontTheme: FontTheme = FontTheme.CUSTOM,
     isAmoledTheme: Boolean = false,
@@ -414,15 +413,15 @@ fun GithubStoreTheme(
 ) {
     val baseColorScheme = when {
         appTheme == AppTheme.DYNAMIC -> {
-            getDynamicColorScheme(darkTheme) ?: run {
-                if (darkTheme) AppTheme.OCEAN.darkScheme else AppTheme.OCEAN.lightScheme
+            getDynamicColorScheme(isDarkTheme) ?: run {
+                if (isDarkTheme) AppTheme.OCEAN.darkScheme else AppTheme.OCEAN.lightScheme
             }
         }
-        darkTheme -> appTheme.darkScheme!!
+        isDarkTheme -> appTheme.darkScheme!!
         else -> appTheme.lightScheme!!
     }
 
-    val colorScheme = if (darkTheme && isAmoledTheme) {
+    val colorScheme = if (isDarkTheme && isAmoledTheme) {
         baseColorScheme?.toAmoled()
     } else {
         baseColorScheme

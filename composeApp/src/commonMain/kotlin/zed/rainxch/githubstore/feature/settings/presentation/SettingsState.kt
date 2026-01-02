@@ -9,4 +9,5 @@ data class SettingsState(
     val isLogoutDialogVisible: Boolean = false,
     val isUserLoggedIn: Boolean = false,
     val isAmoledThemeEnabled: Boolean = false,
+    val isDarkTheme: Boolean? = null,
 )

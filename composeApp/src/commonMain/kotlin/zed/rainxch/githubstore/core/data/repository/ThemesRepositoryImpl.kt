@@ -16,6 +16,7 @@ class ThemesRepositoryImpl(
 ) : ThemesRepository {
     private val THEME_KEY = stringPreferencesKey("app_theme")
     private val AMOLED_KEY = booleanPreferencesKey("amoled_theme")
+    private val IS_DARK_THEME_KEY = booleanPreferencesKey("is_dark_theme")
     private val FONT_KEY = stringPreferencesKey("font_theme")
 
     override fun getThemeColor(): Flow<AppTheme> {
@@ -30,6 +31,23 @@ class ThemesRepositoryImpl(
             prefs[THEME_KEY] = theme.name
         }
     }
+
+    override fun getIsDarkTheme(): Flow<Boolean?> {
+        return preferences.data.map { prefs ->
+            prefs[IS_DARK_THEME_KEY]
+        }
+    }
+
+    override suspend fun setDarkTheme(isDarkTheme: Boolean?) {
+        preferences.edit { prefs ->
+            if (isDarkTheme == null) {
+                prefs.remove(IS_DARK_THEME_KEY)
+            } else {
+                prefs[IS_DARK_THEME_KEY] = isDarkTheme
+            }
+        }
+    }
+
 
     override fun getAmoledTheme(): Flow<Boolean> {
         return preferences.data.map { prefs ->
