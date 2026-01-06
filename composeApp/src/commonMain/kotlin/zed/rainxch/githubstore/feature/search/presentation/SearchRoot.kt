@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import githubstore.composeapp.generated.resources.Res
@@ -409,7 +410,10 @@ private fun SearchTopbar(
                 Text(
                     text = stringResource(Res.string.search_repositories_hint),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    softWrap = false,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             },
             textStyle = MaterialTheme.typography.bodyLarge.copy(
