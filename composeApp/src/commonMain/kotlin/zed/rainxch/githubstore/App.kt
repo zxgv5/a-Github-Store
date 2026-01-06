@@ -20,6 +20,7 @@ import zed.rainxch.githubstore.app.app_state.components.RateLimitDialog
 import zed.rainxch.githubstore.app.navigation.AppNavigation
 import zed.rainxch.githubstore.app.navigation.GithubStoreGraph
 import zed.rainxch.githubstore.core.presentation.theme.GithubStoreTheme
+import zed.rainxch.githubstore.core.presentation.utils.ApplyAndroidSystemBars
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -42,6 +43,8 @@ fun App(
         isAmoledTheme = state.isAmoledTheme,
         isDarkTheme = state.isDarkTheme ?: isSystemInDarkTheme()
     ) {
+        ApplyAndroidSystemBars(state.isDarkTheme)
+
         LaunchedEffect(state.isCheckingAuth) {
             if (!state.isCheckingAuth) {
                 onAuthenticationChecked()
