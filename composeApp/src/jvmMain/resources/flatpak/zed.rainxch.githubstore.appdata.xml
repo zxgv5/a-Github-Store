@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+    <id>zed.rainxch.githubstore</id>
+    <name>GitHub Store</name>
+    <summary>An app store for GitHub releases</summary>
+    <description>
+        <p>Github Store is an app store for GitHub releases that helps you discover and install apps directly from GitHub repositories. The app automatically discovers repositories that ship installable binaries (APK, EXE, DMG, etc.) and lets you install the latest release with one click.</p>
+        <p>Features:</p>
+        <ul>
+            <li>Smart discovery with Popular, Recently Updated, and New sections</li>
+            <li>Platform-aware filtering - only shows apps compatible with your device</li>
+            <li>Always installs from the latest published release</li>
+            <li>Rich app details with README, changelog, and statistics</li>
+            <li>GitHub login support for higher API rate limits</li>
+            <li>Material 3 design with dark mode support</li>
+        </ul>
+        <p>Built with Kotlin Multiplatform and Compose Multiplatform.</p>
+    </description>
+    <project-license>Apache-2.0</project-license>
+    <url type="homepage">https://github.com/rainxchzed/Github-Store</url>
+    <url type="bugtracker">https://github.com/rainxchzed/Github-Store/issues</url>
+    <launchable type="desktop-id">zed.rainxch.githubstore.desktop</launchable>
+    <screenshots>
+        <screenshot type="default">
+            <image>https://github.com/rainxchzed/Github-Store/raw/main/screenshots/screenshot1.png</image> <!-- Replace with real URL -->
+            <caption>Main discovery screen</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://github.com/rainxchzed/Github-Store/raw/main/screenshots/screenshot2.png</image> <!-- Replace with real URL -->
+            <caption>App details view</caption>
+        </screenshot>
+    </screenshots>
+    <releases>
+        <release version="1.5.1" date="2026-01-10">
+            <description><p>Latest updates and bug fixes.</p></description>
+        </release>
+    </releases>
+</component>

@@ -1,0 +1,40 @@
+app-id: zed.rainxch.githubstore
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.openjdk21
+command: GitHub-Store
+finish-args:
+  - --share=network
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+modules:
+  - name: githubstore
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/openjdk21/bin
+      env:
+        JAVA_HOME: /usr/lib/sdk/openjdk21
+    sources:
+      - type: git
+        url: https://github.com/rainxchzed/Github-Store.git
+        tag: 1.5.1
+      # Paste the contents of generated-sources.json here as a YAML list (array of sources)
+      # Example: - type: archive, url: https://some.maven/artifact.jar, sha256: abc123, dest: deps/path
+      - type: file
+        path: zed.rainxch.githubstore.desktop
+      - type: file
+        path: app_icon.png
+      - type: file
+        path: zed.rainxch.githubstore.appdata.xml
+    build-commands:
+      - export GRADLE_USER_HOME=$PWD/.gradle
+      - ./gradlew --offline --no-daemon packageAppImage
+      - mkdir -p /app/bin /app/lib
+      - cp -r build/compose/binaries/main/app/GitHub-Store/bin/* /app/bin/
+      - cp -r build/compose/binaries/main/app/GitHub-Store/lib/* /app/lib/
+      - install -D zed.rainxch.githubstore.desktop /app/share/applications/
+      - install -D app_icon.png /app/share/icons/hicolor/512x512/apps/zed.rainxch.githubstore.png
+      - install -Dm644 zed.rainxch.githubstore.appdata.xml /app/share/metainfo/zed.rainxch.githubstore.appdata.xml

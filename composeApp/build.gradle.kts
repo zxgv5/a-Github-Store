@@ -17,7 +17,6 @@ plugins {
 val appVersionName = "1.5.1"
 val appVersionCode = 10
 
-// Load local.properties for secrets like GITHUB_CLIENT_ID
 val localProps = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.exists()) file.inputStream().use { this.load(it) }
@@ -129,6 +128,8 @@ kotlin {
             // Room
             implementation(libs.androidx.room.runtime)
             implementation(libs.sqlite.bundled)
+
+            implementation(libs.kotlinx.coroutinesSwing)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -143,7 +144,6 @@ kotlin {
 
             dependencies {
                 implementation(compose.desktop.currentOs)
-                implementation(libs.kotlinx.coroutinesSwing)
                 // Koin core
                 implementation(libs.koin.core)
                 // Ktor client for JVM Desktop
@@ -257,6 +257,136 @@ compose.desktop {
                 menuGroup = "Development"
                 appCategory = "Development"
             }
+        }
+    }
+}
+
+val appId = "zed.rainxch.githubstore"
+val appName = "GitHub-Store"
+val flatpakDir = layout.buildDirectory.dir("flatpak")
+val flatpakSourceDir = layout.buildDirectory.dir("flatpak-source")
+
+tasks.register("packageFlatpak") {
+    dependsOn("packageAppImage")
+    group = "build"
+    description = "Build Flatpak for Linux desktop (binary-based)"
+
+    doLast {
+        val flatpakBuildDir = flatpakDir.get().asFile.resolve("build")
+        flatpakBuildDir.mkdirs()
+
+        copy {
+            from("$buildDir/compose/binaries/main/app/$appName/")
+            into(flatpakBuildDir)
+        }
+
+        // Copy resources
+        copy {
+            from(fileTree("src/desktopMain/resources/flatpak/") { include("*.yml", "*.desktop", "*.xml", "app_icon.png") })
+            into(flatpakBuildDir)
+            rename("manifest.yml", "$appId.yml")
+        }
+
+        // Build Flatpak
+        exec {
+            workingDir = flatpakBuildDir
+            commandLine(
+                "flatpak-builder",
+                "--install-deps-from=flathub",
+                "--repo=${flatpakDir.get().asFile.resolve("repo")}",
+                "--force-clean",
+                "build/${appId}",
+                "$appId.yml"
+            )
+        }
+    }
+}
+
+tasks.register("exportFlatpak") {
+    dependsOn("packageFlatpak")
+    group = "build"
+    description = "Export Flatpak bundle (binary-based)"
+
+    doLast {
+        exec {
+            workingDir = flatpakDir.get().asFile
+            commandLine("flatpak", "build-bundle", "repo", "github-store-${appVersionName}.flatpak", appId, "master")
+        }
+    }
+}
+
+tasks.register("runFlatpak") {
+    dependsOn("packageFlatpak")
+    group = "run"
+    description = "Run the Flatpak locally (binary-based)"
+
+    doLast {
+        val flatpakBuildDir = flatpakDir.get().asFile.resolve("build")
+        exec {
+            workingDir = flatpakBuildDir
+            commandLine("flatpak-builder", "--run", "build/${appId}", "${appId}.yml", "GitHub-Store")
+        }
+    }
+}
+
+// New tasks for source-based build
+tasks.register("packageFlatpakSource") {
+    group = "build"
+    description = "Build Flatpak for Linux desktop (source-based for submission)"
+
+    doLast {
+        val flatpakSourceBuildDir = flatpakSourceDir.get().asFile.resolve("build")
+        flatpakSourceBuildDir.mkdirs()
+
+        // Copy resources (assumes generated-sources.json in root with pasted into yml)
+        copy {
+            from(fileTree("src/desktopMain/resources/flatpak/") { include("*.yml", "*.desktop", "*.xml", "app_icon.png") })
+            into(flatpakSourceBuildDir)
+            rename("zed.rainxch.githubstore.yml", "$appId.yml")
+        }
+        copy {
+            from(project.file("generated-sources.json")) // If not pasted, copy and adjust manifest to reference it
+            into(flatpakSourceBuildDir)
+        }
+
+        // Build Flatpak
+        exec {
+            workingDir = flatpakSourceBuildDir
+            commandLine(
+                "flatpak-builder",
+                "--install-deps-from=flathub",
+                "--repo=${flatpakSourceDir.get().asFile.resolve("repo")}",
+                "--force-clean",
+                "build/${appId}",
+                "$appId.yml"
+            )
+        }
+    }
+}
+
+tasks.register("exportFlatpakSource") {
+    dependsOn("packageFlatpakSource")
+    group = "build"
+    description = "Export Flatpak bundle (source-based)"
+
+    doLast {
+        exec {
+            workingDir = flatpakSourceDir.get().asFile
+            commandLine("flatpak", "build-bundle", "repo", "github-store-${appVersionName}-source.flatpak", appId, "master")
+        }
+    }
+}
+
+tasks.register("runFlatpakSource") {
+    dependsOn("packageFlatpakSource")
+    group = "run"
+    description = "Run the Flatpak locally (source-based)"
+
+    doLast {
+        val flatpakSourceBuildDir = flatpakSourceDir.get().asFile.resolve("build")
+        exec {
+            workingDir = flatpakSourceBuildDir
+            commandLine("flatpak-builder", "--run", "build/${appId}", "${appId}.yml", "GitHub-Store")
         }
     }
 }
