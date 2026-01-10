@@ -284,13 +284,52 @@ val copyFlatpakBinary = tasks.register<Copy>("copyFlatpakBinary") {
     }
 }
 
-val copyFlatpakResources = tasks.register<Copy>("copyFlatpakResources") {
+val resizeFlatpakIcon = tasks.register<Exec>("resizeFlatpakIcon") {
     dependsOn(copyFlatpakBinary)
+
+    val resourcesDir = layout.projectDirectory.dir("src/jvmMain/resources/flatpak")
+    val outputDir = flatpakDir.map { it.asFile.resolve("build") }
+
+    doFirst {
+        val inputIcon = resourcesDir.file("app_icon.png").asFile
+        val outputIcon = outputDir.get().resolve("app_icon.png")
+        outputIcon.parentFile.mkdirs()
+
+        // Copy and resize icon
+        inputIcon.copyTo(outputIcon, overwrite = true)
+    }
+
+    workingDir(flatpakDir.map { it.asFile.resolve("build") })
+    commandLine("convert", "app_icon.png", "-resize", "512x512", "app_icon_resized.png")
+
+    doLast {
+        val buildDir = flatpakDir.get().asFile.resolve("build")
+        val resized = buildDir.resolve("app_icon_resized.png")
+        val target = buildDir.resolve("app_icon.png")
+        if (resized.exists()) {
+            resized.copyTo(target, overwrite = true)
+            resized.delete()
+        }
+    }
+
+    // Skip if ImageMagick not available
+    onlyIf {
+        try {
+            val result = ProcessBuilder("which", "convert").start().waitFor()
+            result == 0
+        } catch (e: Exception) {
+            false
+        }
+    }
+}
+
+val copyFlatpakResources = tasks.register<Copy>("copyFlatpakResources") {
+    dependsOn(resizeFlatpakIcon)
 
     val resourcesDir = layout.projectDirectory.dir("src/jvmMain/resources/flatpak")
 
     from(resourcesDir) {
-        include("manifest.yml", "*.desktop", "*.xml", "app_icon.png")
+        include("manifest.yml", "*.desktop", "*.xml")
     }
     into(flatpakDir.map { it.asFile.resolve("build") })
 
