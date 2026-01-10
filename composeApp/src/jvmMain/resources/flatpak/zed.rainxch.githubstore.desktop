@@ -1,10 +1,10 @@
 [Desktop Entry]
-Version=1.5.1
+Version=1.0
 Type=Application
-Categories=Development;Utility;
+Categories=Development;
 Terminal=false
 Exec=GitHub-Store %U
 Name=GitHub Store
-Comment=Discover GitHub projects
+Comment=Discover and install apps from GitHub releases
 Icon=zed.rainxch.githubstore
 StartupWMClass=GitHub-Store
