@@ -93,11 +93,11 @@ class StarredReposViewModel (
         }
     }
 
-    private fun syncStarredRepos() {
+    private fun syncStarredRepos(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _state.update { it.copy(isSyncing = true, errorMessage = null) }
 
-            val result = starredRepository.syncStarredRepos()
+            val result = starredRepository.syncStarredRepos(forceRefresh)
 
             result
                 .onSuccess {
@@ -131,11 +131,11 @@ class StarredReposViewModel (
             }
 
             StarredReposAction.OnRefresh -> {
-                syncStarredRepos()
+                syncStarredRepos(forceRefresh = true)
             }
 
             StarredReposAction.OnRetrySync -> {
-                syncStarredRepos()
+                syncStarredRepos(forceRefresh = true)
             }
 
             StarredReposAction.OnDismissError -> {

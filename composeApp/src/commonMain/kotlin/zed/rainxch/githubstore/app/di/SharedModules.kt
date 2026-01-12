@@ -262,7 +262,7 @@ val starredReposModule: Module = module {
             httpClient = get(),
             dao = get(),
             installedAppsDao = get(),
-            detailsRepository = get()
+            platform = get()
         )
     }
 

@@ -10,12 +10,8 @@ interface StarredRepository {
 
     suspend fun syncStarredRepos(forceRefresh: Boolean = false): Result<Unit>
 
-    suspend fun addStarred(repo: StarredRepo)
-    suspend fun removeStarred(repoId: Long)
-    
     suspend fun updateStarredInstallStatus(repoId: Long, installed: Boolean, packageName: String?)
-    suspend fun syncStarredVersions()
-    
+
     suspend fun getLastSyncTime(): Long?
     suspend fun needsSync(): Boolean
 }
