@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import githubstore.composeapp.generated.resources.Res
@@ -126,6 +127,7 @@ private fun FavouritesTopbar(
             Text(
                 text = stringResource(Res.string.favourites),
                 style = MaterialTheme.typography.titleMediumEmphasized,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
         },

@@ -1,6 +1,7 @@
-package zed.rainxch.githubstore.feature.starred_repos.presentation.components
+@file:OptIn(ExperimentalTime::class)
 
-import androidx.compose.foundation.horizontalScroll
+package zed.rainxch.githubstore.feature.developer_profile.presentation.components
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -11,8 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.CallSplit
 import androidx.compose.material.icons.filled.Favorite
@@ -30,24 +29,25 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil3.CoilImage
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import zed.rainxch.githubstore.core.presentation.theme.GithubStoreTheme
-import zed.rainxch.githubstore.feature.starred_repos.presentation.model.StarredRepositoryUi
+import zed.rainxch.githubstore.feature.developer_profile.domain.model.DeveloperRepository
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
+
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun StarredRepositoryItem(
-    repository: StarredRepositoryUi,
-    onToggleFavoriteClick: () -> Unit,
+fun DeveloperRepoItem(
+    repository: DeveloperRepository,
     onItemClick: () -> Unit,
+    onToggleFavorite: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -63,40 +63,28 @@ fun StarredRepositoryItem(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CoilImage(
-                    imageModel = { repository.repoOwnerAvatarUrl },
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape),
-                    imageOptions = ImageOptions(
-                        contentDescription = "${repository.repoOwner}'s avatar",
-                        contentScale = ContentScale.Crop
-                    ),
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = repository.repoName,
+                        text = repository.name,
                         style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
 
                     Text(
-                        text = repository.repoOwner,
+                        text = "Updated ${formatRelativeDate(repository.updatedAt)}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
+                Spacer(modifier = Modifier.width(8.dp))
+
                 FilledIconToggleButton(
                     checked = repository.isFavorite,
-                    onCheckedChange = { onToggleFavoriteClick() },
+                    onCheckedChange = { onToggleFavorite() },
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
@@ -115,48 +103,46 @@ fun StarredRepositoryItem(
                 }
             }
 
-            repository.repoDescription?.let { description ->
-                Spacer(modifier = Modifier.height(12.dp))
+            repository.description?.let { description ->
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                StatChip(
+                RepoStat(
                     icon = Icons.Default.Star,
-                    label = formatCount(repository.stargazersCount),
+                    value = formatCount(repository.stargazersCount),
                     contentDescription = "${repository.stargazersCount} stars"
                 )
 
-                StatChip(
+                RepoStat(
                     icon = Icons.AutoMirrored.Filled.CallSplit,
-                    label = formatCount(repository.forksCount),
+                    value = formatCount(repository.forksCount),
                     contentDescription = "${repository.forksCount} forks"
                 )
 
                 if (repository.openIssuesCount > 0) {
-                    StatChip(
+                    RepoStat(
                         icon = Icons.Outlined.Warning,
-                        label = formatCount(repository.openIssuesCount),
-                        contentDescription = "${repository.openIssuesCount} open issues"
+                        value = formatCount(repository.openIssuesCount),
+                        contentDescription = "${repository.openIssuesCount} issues"
                     )
                 }
 
-                repository.primaryLanguage?.let { language ->
+                repository.language?.let { language ->
                     SuggestionChip(
                         onClick = {},
                         label = {
@@ -170,7 +156,28 @@ fun StarredRepositoryItem(
                 }
             }
 
-            if (repository.isInstalled || repository.latestRelease != null) {
+            val badges = buildList {
+                if (repository.hasInstallableAssets) {
+                    add(
+                        Badge(
+                            text = repository.latestVersion ?: "Has Release",
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                }
+                if (repository.isInstalled) {
+                    add(
+                        Badge(
+                            text = "Installed",
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    )
+                }
+            }
+
+            if (badges.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 FlowRow(
@@ -178,26 +185,14 @@ fun StarredRepositoryItem(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (repository.isInstalled) {
+                    badges.forEach { badge ->
                         Badge(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                            containerColor = badge.containerColor
                         ) {
                             Text(
-                                text = "Installed",
+                                text = badge.text,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-
-                    repository.latestRelease?.let { version ->
-                        Badge(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer
-                        ) {
-                            Text(
-                                text = version,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                                color = badge.contentColor
                             )
                         }
                     }
@@ -208,9 +203,9 @@ fun StarredRepositoryItem(
 }
 
 @Composable
-private fun StatChip(
+private fun RepoStat(
     icon: ImageVector,
-    label: String,
+    value: String,
     contentDescription: String,
     modifier: Modifier = Modifier
 ) {
@@ -227,45 +222,71 @@ private fun StatChip(
         )
 
         Text(
-            text = label,
+            text = value,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
+private data class Badge(
+    val text: String,
+    val containerColor: Color,
+    val contentColor: Color
+)
+
 private fun formatCount(count: Int): String {
     return when {
+        count >= 1_000_000 -> "${count / 1_000_000}M"
         count >= 1000 -> "${count / 1000}k"
         else -> count.toString()
     }
 }
 
+private fun formatRelativeDate(dateString: String): String {
+    return try {
+        val instant = Instant.parse(dateString)
+        val now = Clock.System.now()
+        val duration = now - instant
+
+        when {
+            duration.inWholeDays > 365 -> "${duration.inWholeDays / 365}y ago"
+            duration.inWholeDays > 30 -> "${duration.inWholeDays / 30}mo ago"
+            duration.inWholeDays > 0 -> "${duration.inWholeDays}d ago"
+            duration.inWholeHours > 0 -> "${duration.inWholeHours}h ago"
+            duration.inWholeMinutes > 0 -> "${duration.inWholeMinutes}m ago"
+            else -> "just now"
+        }
+    } catch (e: Exception) {
+        "recently"
+    }
+}
+
 @Preview
 @Composable
-private fun PreviewStarredRepoItem() {
+private fun PreviewDeveloperRepoItem() {
     GithubStoreTheme {
-        StarredRepositoryItem(
-            repository = StarredRepositoryUi(
-                repoId = 1,
-                repoName = "awesome-app",
-                repoOwner = "developer",
-                repoOwnerAvatarUrl = "",
-                repoDescription = "An awesome application that does amazing things",
-                primaryLanguage = "Kotlin",
-                repoUrl = "",
-                stargazersCount = 1234,
-                forksCount = 567,
-                openIssuesCount = 12,
+        DeveloperRepoItem(
+            repository = DeveloperRepository(
+                id = 1,
+                name = "awesome-kotlin-app",
+                fullName = "developer/awesome-kotlin-app",
+                description = "An amazing Kotlin Multiplatform application that demonstrates modern Android development",
+                htmlUrl = "",
+                stargazersCount = 2340,
+                forksCount = 456,
+                openIssuesCount = 23,
+                language = "Kotlin",
+                hasReleases = true,
+                hasInstallableAssets = true,
                 isInstalled = true,
                 isFavorite = false,
-                latestRelease = "v1.2.3",
-                latestReleaseUrl = null,
-                starredAt = null
+                latestVersion = "v1.5.2",
+                updatedAt = Clock.System.now().toString(),
+                pushedAt = null
             ),
-            onToggleFavoriteClick = {},
-            onItemClick = {}
+            onItemClick = {},
+            onToggleFavorite = {}
         )
     }
 }

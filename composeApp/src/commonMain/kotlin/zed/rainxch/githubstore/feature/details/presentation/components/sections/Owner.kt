@@ -151,24 +151,22 @@ fun LazyListScope.author(
                     }
                 }
 
-                if (false) { // For now invisible
-                    IconButton(
-                        onClick = {
-                            author?.login?.let { author ->
-                                onAction(DetailsAction.OpenAuthorInApp(author))
-                            }
-                        },
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = stringResource(Res.string.navigate_back),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                IconButton(
+                    onClick = {
+                        author?.login?.let { author ->
+                            onAction(DetailsAction.OpenAuthorInApp(author))
+                        }
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = stringResource(Res.string.navigate_back),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }

@@ -70,8 +70,9 @@ import zed.rainxch.githubstore.feature.details.presentation.utils.isLiquidTopbar
 
 @Composable
 fun DetailsRoot(
-    onOpenRepositoryInApp: (repoId: Long) -> Unit,
     onNavigateBack: () -> Unit,
+    onNavigateToDeveloperProfile: (username: String) -> Unit,
+    onOpenRepositoryInApp: (repoId: Long) -> Unit,
     viewModel: DetailsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -106,7 +107,7 @@ fun DetailsRoot(
                 }
 
                 is DetailsAction.OpenAuthorInApp -> {
-                    // TODO will be implemented in future
+                    onNavigateToDeveloperProfile(action.authorLogin)
                 }
 
                 is DetailsAction.OnMessage -> {
