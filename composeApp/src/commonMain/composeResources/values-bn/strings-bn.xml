@@ -307,7 +307,7 @@
 
     <!-- Developer Profile - Empty States -->
     <string name="no_repos_with_releases">ইনস্টল করার যোগ্য রিলিজ সহ কোনো রিপোজিটরি নেই</string>
-    <string name="no_installed_repos">কোনো রিপোসিটোরি ইনস্টল করা হয়নি</string>
+    <string name="no_installed_repos">কোনো রিপোজিটরি ইনস্টল করা হয়নি</string>
     <string name="no_favorite_repos">কোনো পছন্দের রিপোজিটরি নেই</string>
 
     <!-- Developer Profile - Repository Item -->
