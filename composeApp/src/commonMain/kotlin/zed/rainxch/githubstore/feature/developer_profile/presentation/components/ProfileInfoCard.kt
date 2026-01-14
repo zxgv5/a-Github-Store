@@ -33,6 +33,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
+import zed.rainxch.githubstore.core.presentation.components.GithubStoreBodyText
+import zed.rainxch.githubstore.core.presentation.components.GithubStoreSubtitleText
+import zed.rainxch.githubstore.core.presentation.components.GithubStoreTitleText
 import zed.rainxch.githubstore.feature.developer_profile.domain.model.DeveloperProfile
 import zed.rainxch.githubstore.feature.developer_profile.presentation.DeveloperProfileAction
 
@@ -67,19 +70,16 @@ fun ProfileInfoCard(
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
+                    GithubStoreTitleText(
                         text = profile.name ?: profile.login,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        maxLines = 2
                     )
 
                     Spacer(Modifier.height(4.dp))
 
-                    Text(
+                    GithubStoreSubtitleText(
                         text = "@${profile.login}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        maxLines = 1
                     )
 
                     profile.location?.let { location ->
@@ -94,10 +94,9 @@ fun ProfileInfoCard(
                     profile.bio?.let { bio ->
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Text(
+                        GithubStoreBodyText(
                             text = bio,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            maxLines = 4
                         )
                     }
                 }
@@ -183,12 +182,9 @@ private fun InfoChip(
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Text(
+        GithubStoreBodyText(
             text = text,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            maxLines = 1
         )
     }
 }

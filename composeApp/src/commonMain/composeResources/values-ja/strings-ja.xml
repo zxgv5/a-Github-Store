@@ -224,6 +224,9 @@
     <string name="dismiss">閉じる</string>
     <string name="sync_starred_failed">スター付きリポジトリの同期に失敗しました</string>
 
+    <string name="developer_profile_title">開発者プロフィール</string>
+    <string name="open_developer_profile">開発者プロフィールを開く</string>
+
     <!-- Developer Profile - General -->
     <string name="failed_to_load_repositories">リポジトリの読み込みに失敗しました</string>
     <string name="failed_to_load_profile">プロフィールの読み込みに失敗しました</string>

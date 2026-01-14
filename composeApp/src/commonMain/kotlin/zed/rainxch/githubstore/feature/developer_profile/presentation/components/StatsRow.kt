@@ -19,6 +19,8 @@ import githubstore.composeapp.generated.resources.followers
 import githubstore.composeapp.generated.resources.following
 import githubstore.composeapp.generated.resources.repositories
 import org.jetbrains.compose.resources.stringResource
+import zed.rainxch.githubstore.core.presentation.components.GithubStoreBodyText
+import zed.rainxch.githubstore.core.presentation.components.GithubStoreTitleText
 import zed.rainxch.githubstore.feature.developer_profile.domain.model.DeveloperProfile
 
 @Composable
@@ -61,17 +63,14 @@ private fun StatCard(
                 .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
+            GithubStoreTitleText(
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                maxLines = 1
             )
 
-            Text(
+            GithubStoreBodyText(
                 text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                maxLines = 1
             )
         }
     }

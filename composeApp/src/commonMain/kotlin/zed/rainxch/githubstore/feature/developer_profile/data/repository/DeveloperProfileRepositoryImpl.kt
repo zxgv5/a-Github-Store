@@ -164,9 +164,8 @@ class DeveloperProfileRepositoryImpl(
                     PlatformType.ANDROID -> name.endsWith(".apk")
                     PlatformType.WINDOWS -> name.endsWith(".msi") || name.endsWith(".exe")
                     PlatformType.MACOS -> name.endsWith(".dmg") || name.endsWith(".pkg")
-                    PlatformType.LINUX -> name.endsWith(".appimage") || name.endsWith(".deb") || name.endsWith(
-                        ".rpm"
-                    )
+                    PlatformType.LINUX -> name.endsWith(".appimage") || name.endsWith(".deb")
+                            || name.endsWith(".rpm")
                 }
             }
 

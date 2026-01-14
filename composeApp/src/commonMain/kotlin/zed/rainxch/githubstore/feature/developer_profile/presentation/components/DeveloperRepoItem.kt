@@ -57,6 +57,9 @@ import githubstore.composeapp.generated.resources.time_years_ago
 import githubstore.composeapp.generated.resources.updated_on_date
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import zed.rainxch.githubstore.core.presentation.components.GithubStoreBodyText
+import zed.rainxch.githubstore.core.presentation.components.GithubStoreSubtitleText
+import zed.rainxch.githubstore.core.presentation.components.GithubStoreTitleText
 import zed.rainxch.githubstore.core.presentation.theme.GithubStoreTheme
 import zed.rainxch.githubstore.feature.developer_profile.domain.model.DeveloperRepository
 import kotlin.time.Clock
@@ -85,22 +88,17 @@ fun DeveloperRepoItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
+                    GithubStoreTitleText(
                         text = repository.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        maxLines = 1
                     )
 
-                    Text(
+                    GithubStoreSubtitleText(
                         text = stringResource(
                             resource = Res.string.updated_on_date,
                             formatRelativeDate(repository.updatedAt)
                         ).replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        maxLines = 1
                     )
                 }
 
@@ -130,12 +128,9 @@ fun DeveloperRepoItem(
             repository.description?.let { description ->
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
+                GithubStoreBodyText(
                     text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = 2
                 )
             }
 
@@ -248,10 +243,9 @@ private fun RepoStat(
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Text(
+        GithubStoreSubtitleText(
             text = value,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            maxLines = 1
         )
     }
 }

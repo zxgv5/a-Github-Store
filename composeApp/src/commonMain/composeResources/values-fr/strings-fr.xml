@@ -262,7 +262,7 @@
     <string name="has_release">A une version</string>
 
     <!-- Developer Profile - Relative Time -->
-    <string name="time_years_ago">il y a %1$d an</string>
+    <string name="time_years_ago">il y a %1$d an(s)</string>
     <string name="time_months_ago">il y a %1$d mois</string>
     <string name="time_days_ago">il y a %1$d j</string>
     <string name="time_hours_ago">il y a %1$d h</string>

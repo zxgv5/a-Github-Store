@@ -53,6 +53,9 @@ import githubstore.composeapp.generated.resources.open_repository
 import githubstore.composeapp.generated.resources.retry
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import zed.rainxch.githubstore.core.presentation.components.GithubStoreBodyText
+import zed.rainxch.githubstore.core.presentation.components.GithubStoreButtonText
+import zed.rainxch.githubstore.core.presentation.components.GithubStoreTitleText
 import zed.rainxch.githubstore.feature.developer_profile.domain.model.RepoFilterType
 import zed.rainxch.githubstore.feature.developer_profile.presentation.components.DeveloperRepoItem
 import zed.rainxch.githubstore.feature.developer_profile.presentation.components.FilterSortControls
@@ -254,10 +257,9 @@ private fun EmptyReposContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        Text(
+        GithubStoreBodyText(
             text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
             textAlign = TextAlign.Center
         )
     }
@@ -332,16 +334,16 @@ private fun ErrorContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
+        GithubStoreTitleText(
             text = stringResource(Res.string.error_generic, message),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface
+            maxLines = 3,
+            textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = onRetry) {
-            Text(
+            GithubStoreButtonText(
                 text = stringResource(Res.string.retry)
             )
         }

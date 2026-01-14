@@ -23,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,6 +49,7 @@ import githubstore.composeapp.generated.resources.sort_most_stars
 import githubstore.composeapp.generated.resources.sort_name
 import githubstore.composeapp.generated.resources.sort_recently_updated
 import org.jetbrains.compose.resources.stringResource
+import zed.rainxch.githubstore.core.presentation.components.GithubStoreBodyText
 import zed.rainxch.githubstore.feature.developer_profile.domain.model.RepoFilterType
 import zed.rainxch.githubstore.feature.developer_profile.domain.model.RepoSortType
 import zed.rainxch.githubstore.feature.developer_profile.presentation.DeveloperProfileAction
@@ -73,9 +75,9 @@ fun FilterSortControls(
             },
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
-                Text(
+                GithubStoreBodyText(
                     text = stringResource(Res.string.search_repositories),
-                    style = MaterialTheme.typography.bodyMedium
+                    maxLines = 1
                 )
             },
             leadingIcon = {
@@ -106,7 +108,7 @@ fun FilterSortControls(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            ScrollableTabRow(
+            SecondaryScrollableTabRow(
                 selectedTabIndex = currentFilter.ordinal,
                 modifier = Modifier.weight(1f),
                 edgePadding = 0.dp,
@@ -129,7 +131,7 @@ fun FilterSortControls(
             )
         }
 
-        Text(
+        GithubStoreBodyText(
             text = if (repoCount == totalCount) {
                 "$repoCount ${
                     stringResource(
@@ -146,8 +148,7 @@ fun FilterSortControls(
                     repoCount, totalCount
                 )
             },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            maxLines = 1
         )
     }
 }
@@ -216,9 +217,9 @@ private fun SortMenu(
                                 Spacer(modifier = Modifier.size(18.dp))
                             }
 
-                            Text(
+                            GithubStoreBodyText(
                                 text = sort.displayName(),
-                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
                                 color = if (currentSort == sort) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
