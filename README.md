@@ -74,8 +74,8 @@ clean, app‑store style experience:
   <img src="https://img.shields.io/badge/Featured%20by-HowToMen-red?logo=youtube" alt="Featured by HowToMen">
 </a>
 
-- **HowToMen**: [Top 20 Best Android Apps 2026 (860K subscribers)](https://www.youtube.com/watch?v=7favc9MDedQ)
-- **F-Droid**: [#1 in App Store category](https://f-droid.org/en/categories/app-store-updater/)
+- **HowToMen**: [Top 20 Best Android Apps 2026](https://www.youtube.com/watch?v=7favc9MDedQ)
+- **Hello Github**: [Featured on Hello Github](https://hellogithub.com/en/repository/rainxchzed/Github-Store)
 
 ## 🚀 Features
 
