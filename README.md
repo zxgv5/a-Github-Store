@@ -73,7 +73,7 @@ Built with Kotlin Multiplatform and Compose Multiplatform for Android and Deskto
 
 Check out GitHub Store [Wiki](https://github.com/rainxchzed/Github-Store/wiki) for FAQ and useful information
 
-**Privacy Policy:** [openhub-store.github.io/privacy-policy](https://openhub-store.github.io/privacy-policy/)
+**Privacy Policy:** [github-store.org/privacy-policy](https://github-store.org/privacy-policy/)
 
 </div>
 
