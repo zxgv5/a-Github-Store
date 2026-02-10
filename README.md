@@ -114,6 +114,9 @@ GitHub® is a registered trademark of GitHub, Inc.
 <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/rainxchzed/Github-Store/">
   <img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="60" alt="Get it on Obtainium">
 </a>
+<a href="https://discord.gg/x9Cvh2Z9qS">
+  <img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord">
+</a>
 </p>
 
 > [!IMPORTANT]
@@ -327,7 +330,7 @@ I built and maintain this entirely on my own while finishing high school. Your s
 - ⭐ **Starring this repo** — helps others discover GitHub Store
 - 🐛 **Reporting bugs** — makes the app better for everyone
 - 📢 **Sharing with friends** — spread the word to other developers
-- 💬 **Joining discussions** — your feedback shapes the roadmap
+- 💬 **Joining our [Discord](https://discord.gg/x9Cvh2Z9qS)** — your feedback shapes the roadmap
 
 Every bit of support—financial or not—means the world and keeps this project alive. Thank you!
 
