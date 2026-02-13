@@ -37,6 +37,7 @@ class HomeViewModel(
 
     private var hasLoadedInitialData = false
     private var currentJob: Job? = null
+    private var switchCategoryJob: Job? = null
     private var nextPageIndex = 1
 
     private val _state = MutableStateFlow(HomeState())
@@ -103,12 +104,13 @@ class HomeViewModel(
     }
 
     private fun loadRepos(isInitial: Boolean = false, category: HomeCategory? = null): Job? {
+        currentJob?.cancel()
+
         if (_state.value.isLoading || _state.value.isLoadingMore) {
             logger.debug("Already loading, skipping...")
             return null
         }
 
-        currentJob?.cancel()
 
         if (isInitial) {
             nextPageIndex = 1
@@ -239,11 +241,13 @@ class HomeViewModel(
             is HomeAction.SwitchCategory -> {
                 if (_state.value.currentCategory != action.category) {
                     nextPageIndex = 1
-                    viewModelScope.launch {
+                    switchCategoryJob?.cancel()
+                    switchCategoryJob = viewModelScope.launch {
                         loadRepos(isInitial = true, category = action.category)?.join()
-
+                            ?: return@launch
                         _events.send(HomeEvent.OnScrollToListTop)
                     }
+
                 }
             }
 

@@ -25,6 +25,7 @@ import zed.rainxch.core.domain.model.FavoriteRepo
 import zed.rainxch.core.domain.model.InstallSource
 import zed.rainxch.core.domain.model.InstalledApp
 import zed.rainxch.core.domain.model.Platform
+import zed.rainxch.core.domain.model.RateLimitException
 import zed.rainxch.core.domain.network.Downloader
 import zed.rainxch.core.domain.repository.FavouritesRepository
 import zed.rainxch.core.domain.repository.InstalledAppsRepository
@@ -37,6 +38,7 @@ import zed.rainxch.details.domain.repository.DetailsRepository
 import zed.rainxch.details.presentation.model.DownloadStage
 import zed.rainxch.details.presentation.model.InstallLogItem
 import zed.rainxch.details.presentation.model.LogResult
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Clock.System
 import kotlin.time.ExperimentalTime
 
@@ -76,6 +78,8 @@ class DetailsViewModel(
     private val _events = Channel<DetailsEvent>()
     val events = _events.receiveAsFlow()
 
+    val rateLimited = AtomicBoolean(false)
+
     @OptIn(ExperimentalTime::class)
     private fun loadInitial() {
         viewModelScope.launch {
@@ -91,6 +95,9 @@ class DetailsViewModel(
                 val isFavoriteDeferred = async {
                     try {
                         favouritesRepository.isFavoriteSync(repo.id)
+                    } catch (_: RateLimitException) {
+                        rateLimited.set(true)
+                        null
                     } catch (t: Throwable) {
                         logger.error("Failed to load if repo is favourite: ${t.localizedMessage}")
                         false
@@ -100,6 +107,9 @@ class DetailsViewModel(
                 val isStarredDeferred = async {
                     try {
                         starredRepository.isStarred(repo.id)
+                    } catch (_: RateLimitException) {
+                        rateLimited.set(true)
+                        null
                     } catch (t: Throwable) {
                         logger.error("Failed to load if repo is starred: ${t.localizedMessage}")
                         false
@@ -112,17 +122,18 @@ class DetailsViewModel(
 
                 _state.value = _state.value.copy(
                     repository = repo,
-                    isFavourite = isFavorite,
-                    isStarred = isStarred,
+                    isFavourite = isFavorite == true,
+                    isStarred = isStarred == true,
                 )
 
                 val latestReleaseDeferred = async {
                     try {
                         detailsRepository.getLatestPublishedRelease(
-                            owner = owner,
-                            repo = name,
-                            defaultBranch = repo.defaultBranch
+                            owner = owner, repo = name, defaultBranch = repo.defaultBranch
                         )
+                    } catch (_: RateLimitException) {
+                        rateLimited.set(true)
+                        null
                     } catch (t: Throwable) {
                         logger.warn("Failed to load latest release: ${t.message}")
                         null
@@ -132,6 +143,9 @@ class DetailsViewModel(
                 val statsDeferred = async {
                     try {
                         detailsRepository.getRepoStats(owner, name)
+                    } catch (_: RateLimitException) {
+                        rateLimited.set(true)
+                        null
                     } catch (_: Throwable) {
                         null
                     }
@@ -144,6 +158,9 @@ class DetailsViewModel(
                             repo = name,
                             defaultBranch = repo.defaultBranch
                         )
+                    } catch (_: RateLimitException) {
+                        rateLimited.set(true)
+                        null
                     } catch (_: Throwable) {
                         null
                     }
@@ -152,6 +169,9 @@ class DetailsViewModel(
                 val userProfileDeferred = async {
                     try {
                         detailsRepository.getUserProfile(owner)
+                    } catch (_: RateLimitException) {
+                        rateLimited.set(true)
+                        null
                     } catch (t: Throwable) {
                         logger.warn("Failed to load user profile: ${t.message}")
                         null
@@ -177,6 +197,9 @@ class DetailsViewModel(
                         } else {
                             null
                         }
+                    } catch (_: RateLimitException) {
+                        rateLimited.set(true)
+                        null
                     } catch (t: Throwable) {
                         logger.error("Failed to load installed app: ${t.message}")
                         null
@@ -191,6 +214,11 @@ class DetailsViewModel(
                 val readme = readmeDeferred.await()
                 val userProfile = userProfileDeferred.await()
                 val installedApp = installedAppDeferred.await()
+
+                if (rateLimited.get()) {
+                    _state.value = _state.value.copy(isLoading = false, errorMessage = null)
+                    return@launch
+                }
 
                 val installable = latestRelease?.assets?.filter { asset ->
                     installer.isAssetInstallable(asset.name)
@@ -220,6 +248,12 @@ class DetailsViewModel(
                     isAppManagerAvailable = isAppManagerAvailable,
                     isAppManagerEnabled = isAppManagerEnabled,
                     installedApp = installedApp,
+                )
+            } catch (e: RateLimitException) {
+                logger.error("Rate limited: ${e.message}")
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    errorMessage = null
                 )
             } catch (t: Throwable) {
                 logger.error("Details load failed: ${t.message}")

@@ -17,5 +17,4 @@ data class GithubRepoSummary(
     val topics: List<String>?,
     val releasesUrl: String,
     val updatedAt: String,
-    val trendingScore: Double? = null
 )
