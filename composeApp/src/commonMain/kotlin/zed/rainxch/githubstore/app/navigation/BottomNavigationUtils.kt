@@ -6,28 +6,14 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person2
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Apps
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person2
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.ui.graphics.vector.ImageVector
-import githubstore.composeapp.generated.resources.Res
-import githubstore.composeapp.generated.resources.bottom_nav_apps_title
-import githubstore.composeapp.generated.resources.bottom_nav_home_title
-import githubstore.composeapp.generated.resources.bottom_nav_profile_title
-import githubstore.composeapp.generated.resources.bottom_nav_search_title
-import githubstore.composeapp.generated.resources.favourites
-import githubstore.composeapp.generated.resources.home_retry
-import githubstore.composeapp.generated.resources.installed_apps
-import githubstore.composeapp.generated.resources.profile
-import githubstore.composeapp.generated.resources.search_repositories_hint
-import githubstore.composeapp.generated.resources.settings_title
-import githubstore.composeapp.generated.resources.stars
 import org.jetbrains.compose.resources.StringResource
 import zed.rainxch.core.domain.getPlatform
 import zed.rainxch.core.domain.model.Platform
+import zed.rainxch.githubstore.core.presentation.res.*
 
 data class BottomNavigationItem(
     val titleRes: StringResource,
