@@ -3,6 +3,7 @@ package zed.rainxch.githubstore
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
@@ -10,6 +11,8 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 import zed.rainxch.core.presentation.theme.GithubStoreTheme
 import zed.rainxch.core.presentation.utils.ApplyAndroidSystemBars
+import zed.rainxch.githubstore.app.deeplink.DeepLinkDestination
+import zed.rainxch.githubstore.app.deeplink.DeepLinkParser
 import zed.rainxch.githubstore.app.navigation.AppNavigation
 import zed.rainxch.githubstore.app.navigation.GithubStoreGraph
 import zed.rainxch.githubstore.app.components.RateLimitDialog
@@ -17,11 +20,27 @@ import zed.rainxch.githubstore.app.components.RateLimitDialog
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 @Preview
-fun App() {
+fun App(deepLinkUri: String? = null) {
     val viewModel: MainViewModel = koinViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     val navBackStack = rememberNavController()
+
+    LaunchedEffect(deepLinkUri) {
+        deepLinkUri?.let { uri ->
+            when (val destination = DeepLinkParser.parse(uri)) {
+                is DeepLinkDestination.Repository -> {
+                    navBackStack.navigate(
+                        GithubStoreGraph.DetailsScreen(
+                            owner = destination.owner,
+                            repo = destination.repo
+                        )
+                    )
+                }
+                DeepLinkDestination.None -> { /* ignore unrecognized deep links */ }
+            }
+        }
+    }
 
     GithubStoreTheme(
         fontTheme = state.currentFontTheme,
