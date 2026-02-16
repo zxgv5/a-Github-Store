@@ -10,31 +10,42 @@ import zed.rainxch.githubstore.app.di.initKoin
 import githubstore.composeapp.generated.resources.Res
 import githubstore.composeapp.generated.resources.app_icon
 import java.awt.Desktop
-import java.net.URI
+import kotlin.system.exitProcess
 
-fun main(args: Array<String>) = application {
-    initKoin()
+fun main(args: Array<String>) {
+    val deepLinkArg = args.firstOrNull()
 
-    // Deep link state — can come from CLI args or macOS open-url event
-    var deepLinkUri by mutableStateOf(args.firstOrNull())
+    if (deepLinkArg != null && DesktopDeepLink.tryForwardToRunningInstance(deepLinkArg)) {
+        exitProcess(0)
+    }
 
-    // Register macOS URI scheme handler (githubstore://)
-    // When the packaged .app is opened via a URL, macOS delivers it here
-    if (Desktop.isDesktopSupported()) {
-        Desktop.getDesktop().let { desktop ->
-            if (desktop.isSupported(Desktop.Action.APP_OPEN_URI)) {
-                desktop.setOpenURIHandler { event ->
-                    deepLinkUri = event.uri.toString()
+    DesktopDeepLink.registerUriSchemeIfNeeded()
+
+    application {
+        initKoin()
+
+        var deepLinkUri by mutableStateOf(deepLinkArg)
+
+        DesktopDeepLink.startInstanceListener { uri ->
+            deepLinkUri = uri
+        }
+
+        if (Desktop.isDesktopSupported()) {
+            Desktop.getDesktop().let { desktop ->
+                if (desktop.isSupported(Desktop.Action.APP_OPEN_URI)) {
+                    desktop.setOpenURIHandler { event ->
+                        deepLinkUri = event.uri.toString()
+                    }
                 }
             }
         }
-    }
 
-    Window(
-        onCloseRequest = ::exitApplication,
-        title = "GitHub Store",
-        icon = painterResource(Res.drawable.app_icon)
-    ) {
-        App(deepLinkUri = deepLinkUri)
+        Window(
+            onCloseRequest = ::exitApplication,
+            title = "GitHub Store",
+            icon = painterResource(Res.drawable.app_icon)
+        ) {
+            App(deepLinkUri = deepLinkUri)
+        }
     }
 }
