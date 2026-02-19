@@ -201,13 +201,17 @@ class AppsViewModel(
     }
 
     private fun uninstallApp(app: InstalledApp) {
-        try {
-            installer.uninstall(app.packageName)
-            logger.debug("Requested uninstall for ${app.packageName}")
-        } catch (e: Exception) {
-            logger.error("Failed to request uninstall for ${app.packageName}: ${e.message}")
-            viewModelScope.launch {
-                _events.send(AppsEvent.ShowError("Failed to uninstall ${app.appName}"))
+        viewModelScope.launch {
+            try {
+                installer.uninstall(app.packageName)
+                logger.debug("Requested uninstall for ${app.packageName}")
+            } catch (e: Exception) {
+                logger.error("Failed to request uninstall for ${app.packageName}: ${e.message}")
+                _events.send(
+                    AppsEvent.ShowError(
+                        getString(Res.string.failed_to_uninstall, arrayOf(app.appName))
+                    )
+                )
             }
         }
     }
@@ -300,7 +304,8 @@ class AppsViewModel(
                             installer.getApkInfoExtractor().extractPackageInfo(existingPath)
                         val normalizedExisting =
                             apkInfo?.versionName?.removePrefix("v")?.removePrefix("V") ?: ""
-                        val normalizedLatest = latestVersion.removePrefix("v").removePrefix("V")
+                        val normalizedLatest =
+                            latestVersion.removePrefix("v").removePrefix("V")
                         if (normalizedExisting != normalizedLatest) {
                             val deleted = file.delete()
                             logger.debug("Deleted mismatched existing file ($normalizedExisting != $normalizedLatest): $deleted")

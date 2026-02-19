@@ -301,24 +301,34 @@ class DetailsViewModel(
                 val installedApp = _state.value.installedApp
 
                 if (primary != null && release != null) {
-                    // Downgrade detection: if app is installed, selected version differs,
-                    // and it's NOT flagged as an update, it might be a downgrade
                     if (installedApp != null &&
                         !installedApp.isPendingInstall &&
                         !installedApp.isUpdateAvailable &&
                         normalizeVersion(release.tagName) != normalizeVersion(installedApp.installedVersion) &&
                         platform == Platform.ANDROID
                     ) {
-                        viewModelScope.launch {
-                            _events.send(
-                                DetailsEvent.ShowDowngradeWarning(
-                                    packageName = installedApp.packageName,
-                                    currentVersion = installedApp.installedVersion,
-                                    targetVersion = release.tagName
-                                )
-                            )
+                        val isConfirmedDowngrade = if (
+                            normalizeVersion(release.tagName) == normalizeVersion(installedApp.latestVersion) &&
+                            (installedApp.latestVersionCode ?: 0L) > 0
+                        ) {
+                            installedApp.installedVersionCode > (installedApp.latestVersionCode
+                                ?: 0L)
+                        } else {
+                            true
                         }
-                        return
+
+                        if (isConfirmedDowngrade) {
+                            viewModelScope.launch {
+                                _events.send(
+                                    DetailsEvent.ShowDowngradeWarning(
+                                        packageName = installedApp.packageName,
+                                        currentVersion = installedApp.installedVersion,
+                                        targetVersion = release.tagName
+                                    )
+                                )
+                            }
+                            return
+                        }
                     }
 
                     installAsset(
@@ -470,7 +480,7 @@ class DetailsViewModel(
                             DetailsEvent.OnMessage(
                                 getString(
                                     Res.string.failed_to_open_app,
-                                    arrayOf(installedApp.appName)
+                                    installedApp.appName
                                 )
                             )
                         )
@@ -955,8 +965,8 @@ class DetailsViewModel(
         }
     }
 
-    private fun normalizeVersion(version: String): String {
-        return version.removePrefix("v").removePrefix("V").trim()
+    private fun normalizeVersion(version: String?): String {
+        return version?.removePrefix("v")?.removePrefix("V")?.trim() ?: ""
     }
 
     private companion object {

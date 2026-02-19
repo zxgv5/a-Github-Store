@@ -62,7 +62,8 @@ fun SmartInstallButton(
 
     val installedApp = state.installedApp
     val isInstalled = installedApp != null && !installedApp.isPendingInstall
-    val isUpdateAvailable = installedApp?.isUpdateAvailable == true && !installedApp.isPendingInstall
+    val isUpdateAvailable =
+        installedApp?.isUpdateAvailable == true && !installedApp.isPendingInstall
 
     val isSameVersionInstalled = isInstalled &&
             installedApp != null &&
@@ -85,10 +86,10 @@ fun SmartInstallButton(
         ) {
             // Uninstall button
             ElevatedCard(
+                onClick = { onAction(DetailsAction.UninstallApp) },
                 modifier = Modifier
                     .weight(1f)
                     .height(52.dp)
-                    .clickable { onAction(DetailsAction.UninstallApp) }
                     .liquefiable(liquidState),
                 colors = CardDefaults.elevatedCardColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer
@@ -180,11 +181,10 @@ fun SmartInstallButton(
         !enabled && primaryAsset == null -> stringResource(Res.string.not_available)
         isUpdateAvailable -> stringResource(
             Res.string.update_to_version,
-            installedApp?.latestVersion.toString()
+            installedApp.latestVersion.toString()
         )
 
-        isInstalled && installedApp != null &&
-                installedApp.installedVersion != state.selectedRelease?.tagName ->
+        isInstalled && installedApp.installedVersion != state.selectedRelease?.tagName ->
             stringResource(
                 Res.string.install_version,
                 state.selectedRelease?.tagName ?: ""

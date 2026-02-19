@@ -24,6 +24,7 @@ class AndroidInstaller(
     override fun getApkInfoExtractor(): InstallerInfoExtractor {
         return installerInfoExtractor
     }
+
     override fun detectSystemArchitecture(): SystemArchitecture {
         val arch = Build.SUPPORTED_ABIS.firstOrNull() ?: return SystemArchitecture.UNKNOWN
         return when {
@@ -42,7 +43,10 @@ class AndroidInstaller(
         return isArchitectureCompatible(name, systemArch)
     }
 
-    private fun isArchitectureCompatible(assetName: String, systemArch: SystemArchitecture): Boolean {
+    private fun isArchitectureCompatible(
+        assetName: String,
+        systemArch: SystemArchitecture
+    ): Boolean {
         return AssetArchitectureMatcher.isCompatible(assetName, systemArch)
     }
 
@@ -57,17 +61,37 @@ class AndroidInstaller(
             val name = asset.name.lowercase()
             val archBoost = when (systemArch) {
                 SystemArchitecture.X86_64 -> {
-                    if (AssetArchitectureMatcher.isExactMatch(name, SystemArchitecture.X86_64)) 10000 else 0
+                    if (AssetArchitectureMatcher.isExactMatch(
+                            name,
+                            SystemArchitecture.X86_64
+                        )
+                    ) 10000 else 0
                 }
+
                 SystemArchitecture.AARCH64 -> {
-                    if (AssetArchitectureMatcher.isExactMatch(name, SystemArchitecture.AARCH64)) 10000 else 0
+                    if (AssetArchitectureMatcher.isExactMatch(
+                            name,
+                            SystemArchitecture.AARCH64
+                        )
+                    ) 10000 else 0
                 }
+
                 SystemArchitecture.X86 -> {
-                    if (AssetArchitectureMatcher.isExactMatch(name, SystemArchitecture.X86)) 10000 else 0
+                    if (AssetArchitectureMatcher.isExactMatch(
+                            name,
+                            SystemArchitecture.X86
+                        )
+                    ) 10000 else 0
                 }
+
                 SystemArchitecture.ARM -> {
-                    if (AssetArchitectureMatcher.isExactMatch(name, SystemArchitecture.ARM)) 10000 else 0
+                    if (AssetArchitectureMatcher.isExactMatch(
+                            name,
+                            SystemArchitecture.ARM
+                        )
+                    ) 10000 else 0
                 }
+
                 SystemArchitecture.UNKNOWN -> 0
             }
             archBoost + asset.size
@@ -170,9 +194,15 @@ class AndroidInstaller(
     override fun openApp(packageName: String): Boolean {
         val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
         return if (launchIntent != null) {
-            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(launchIntent)
-            true
+            try {
+                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(launchIntent)
+                true
+            } catch (e: ActivityNotFoundException) {
+                Logger.w { "Failed to launch $packageName: ${e.message}" }
+                false
+            }
+
         } else {
             Logger.w { "No launch intent found for $packageName" }
             false
