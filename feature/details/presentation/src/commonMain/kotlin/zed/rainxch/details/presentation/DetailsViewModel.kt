@@ -468,7 +468,19 @@ class DetailsViewModel(
             DetailsAction.UninstallApp -> {
                 val installedApp = _state.value.installedApp ?: return
                 logger.debug("Uninstalling app: ${installedApp.packageName}")
-                installer.uninstall(installedApp.packageName)
+                viewModelScope.launch {
+                    try {
+                        installer.uninstall(installedApp.packageName)
+                    } catch (e: Exception) {
+                        logger.error("Failed to request uninstall for ${installedApp.packageName}: ${e.message}")
+                        _events.send(
+                            DetailsEvent.OnMessage(
+                                getString(Res.string.failed_to_uninstall, installedApp.packageName)
+                            )
+                        )
+                    }
+                }
+
             }
 
             DetailsAction.OpenApp -> {

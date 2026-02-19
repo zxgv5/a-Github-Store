@@ -209,7 +209,7 @@ class AppsViewModel(
                 logger.error("Failed to request uninstall for ${app.packageName}: ${e.message}")
                 _events.send(
                     AppsEvent.ShowError(
-                        getString(Res.string.failed_to_uninstall, arrayOf(app.appName))
+                        getString(Res.string.failed_to_uninstall, app.appName)
                     )
                 )
             }
@@ -227,7 +227,7 @@ class AppsViewModel(
                                 AppsEvent.ShowError(
                                     getString(
                                         Res.string.cannot_launch,
-                                        arrayOf(app.appName)
+                                        app.appName
                                     )
                                 )
                             )
@@ -240,7 +240,7 @@ class AppsViewModel(
                     AppsEvent.ShowError(
                         getString(
                             Res.string.failed_to_open,
-                            arrayOf(app.appName)
+                            app.appName
                         )
                     )
                 )
@@ -392,7 +392,7 @@ class AppsViewModel(
                     AppsEvent.ShowError(
                         getString(
                             Res.string.failed_to_update,
-                            arrayOf(app.appName, e.message ?: "")
+                            app.appName, e.message ?: ""
                         )
                     )
                 )

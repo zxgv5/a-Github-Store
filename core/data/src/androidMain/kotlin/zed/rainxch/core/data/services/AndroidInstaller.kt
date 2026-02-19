@@ -104,16 +104,14 @@ class AndroidInstaller(
     }
 
     override suspend fun ensurePermissionsOrThrow(extOrMime: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val pm = context.packageManager
-            if (!pm.canRequestPackageInstalls()) {
-                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                    data = "package:${context.packageName}".toUri()
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-                throw IllegalStateException("Please enable 'Install unknown apps' for this app in Settings and try again.")
+        val pm = context.packageManager
+        if (!pm.canRequestPackageInstalls()) {
+            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                data = "package:${context.packageName}".toUri()
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
+            context.startActivity(intent)
+            throw IllegalStateException("Please enable 'Install unknown apps' for this app in Settings and try again.")
         }
     }
 
@@ -188,7 +186,12 @@ class AndroidInstaller(
             data = "package:$packageName".toUri()
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(intent)
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Logger.w { "Failed to start uninstall for $packageName: ${e.message}" }
+        }
+
     }
 
     override fun openApp(packageName: String): Boolean {
