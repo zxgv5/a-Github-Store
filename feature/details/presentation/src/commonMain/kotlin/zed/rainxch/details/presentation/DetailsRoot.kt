@@ -66,6 +66,7 @@ import zed.rainxch.details.presentation.components.sections.about
 import zed.rainxch.details.presentation.components.sections.author
 import zed.rainxch.details.presentation.components.sections.header
 import zed.rainxch.details.presentation.components.sections.logs
+import zed.rainxch.details.presentation.components.sections.reportIssue
 import zed.rainxch.details.presentation.components.sections.stats
 import zed.rainxch.details.presentation.components.sections.whatsNew
 import zed.rainxch.details.presentation.components.states.ErrorState
@@ -392,6 +393,12 @@ fun DetailsScreen(
                                 },
                             )
                         }
+                    }
+
+                    state.repository?.let { repository ->
+                        reportIssue(
+                            repoUrl = repository.htmlUrl
+                        )
                     }
 
                     state.userProfile?.let { userProfile ->
