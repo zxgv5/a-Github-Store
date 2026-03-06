@@ -45,11 +45,11 @@ work = "2.11.1"
 resources="1.10.1"
 
 projectApplicationId = "zed.rainxch.githubstore"
-projectVersionName = "1.6.0"
+projectVersionName = "1.6.1"
 projectMinSdkVersion = "26"
 projectTargetSdkVersion = "36"
 projectCompileSdkVersion = "36"
-projectVersionCode = "11"
+projectVersionCode = "12"
 
 [libraries]
 # Kotlin
