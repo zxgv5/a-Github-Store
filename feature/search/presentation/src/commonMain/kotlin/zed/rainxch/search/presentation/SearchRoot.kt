@@ -377,7 +377,6 @@ fun SearchScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -430,7 +429,6 @@ fun SearchScreen(
                 }
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
