@@ -250,7 +250,7 @@ jobs:
           EOF
 
           # Copy icon to AppDir root (required by appimagetool)
-          cp composeApp/logo/app_icon.png "$APPDIR/github-store.png"
+          cp "$APPDIR/lib/GitHub-Store.png" "$APPDIR/github-store.png"
 
           # Build .AppImage
           OUTPUT="composeApp/build/compose/binaries/main/GitHub-Store-x86_64.AppImage"
