@@ -1,5 +1,6 @@
 package zed.rainxch.core.data.network.interceptor
 
+import co.touchlab.kermit.Logger
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpClientPlugin
 import io.ktor.client.statement.HttpReceivePipeline
@@ -7,12 +8,13 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.HttpResponsePipeline
 import io.ktor.http.Headers
 import io.ktor.util.AttributeKey
+import zed.rainxch.core.domain.logging.GitHubStoreLogger
 import zed.rainxch.core.domain.model.RateLimitException
 import zed.rainxch.core.domain.model.RateLimitInfo
 import zed.rainxch.core.domain.repository.RateLimitRepository
 
 class RateLimitInterceptor(
-    private val rateLimitRepository: RateLimitRepository
+    private val rateLimitRepository: RateLimitRepository,
 ) {
     
     class Config {
@@ -28,7 +30,7 @@ class RateLimitInterceptor(
             return RateLimitInterceptor(
                 rateLimitRepository = requireNotNull(config.rateLimitRepository) {
                     "RateLimitRepository must be provided"
-                }
+                },
             )
         }
 
@@ -43,25 +45,21 @@ class RateLimitInterceptor(
                         throw RateLimitException(rateLimitInfo)
                     }
                 }
-                
+
                 proceedWith(subject)
             }
         }
-        
+
         private fun parseRateLimitFromHeaders(headers: Headers): RateLimitInfo? {
             return try {
-                val limit = headers["X-RateLimit-Limit"]?.toIntOrNull() ?: return null
-                val remaining = headers["X-RateLimit-Remaining"]?.toIntOrNull() ?: return null
-                val reset = headers["X-RateLimit-Reset"]?.toLongOrNull() ?: return null
+                val limit = headers["X-RateLimit-Limit"]?.toIntOrNull() ?: return null.also { Logger.w { "Missing X-RateLimit-Limit" } }
+                val remaining = headers["X-RateLimit-Remaining"]?.toIntOrNull() ?: return null.also { Logger.w { "Missing X-RateLimit-Remaining" } }
+                val reset = headers["X-RateLimit-Reset"]?.toLongOrNull() ?: return null.also { Logger.w { "Missing X-RateLimit-Reset" } }
                 val resource = headers["X-RateLimit-Resource"] ?: "core"
 
-                RateLimitInfo(
-                    limit = limit,
-                    remaining = remaining,
-                    resetTimestamp = reset,
-                    resource = resource
-                )
+                RateLimitInfo(limit, remaining, reset, resource)
             } catch (e: Exception) {
+                Logger.e(e) { "Failed to parse rate limit headers" }
                 null
             }
         }
