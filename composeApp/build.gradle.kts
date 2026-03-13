@@ -96,6 +96,8 @@ kotlin {
                 implementation(compose.desktop.macos_arm64)
                 implementation(compose.desktop.windows_x64)
                 implementation(compose.desktop.windows_arm64)
+
+                implementation(libs.slf4j.simple)
             }
         }
     }
