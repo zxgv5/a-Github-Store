@@ -18,8 +18,8 @@
   <img alt="Compose Multiplatform" src="https://img.shields.io/static/v1?style=for-the-badge&message=Compose+Multiplatform&color=4285F4&logo=Jetpack+Compose&logoColor=FFFFFF&label="/> 
   <img alt="material" src="https://custom-icon-badges.demolab.com/badge/material%20you-lightblue?style=for-the-badge&logoColor=333&logo=material-you"/>
 
-    </br>
-    </br>
+</br>
+</br>
   
 <img src="https://img.shields.io/github/downloads/OpenHub-Store/GitHub-Store/total?color=aeff4d&style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHRpdGxlPmRvd25sb2FkPC90aXRsZT48cGF0aCBkPSJNNSwyMEgxOVYxOEg1TTE5LDlIMTVWM0g5VjlINUwxMiwxNkwxOSw5WiIgZmlsbD0id2hpdGUiIC8+PC9zdmc+&label=Downloads&labelColor=4b731a"/>
 
@@ -29,8 +29,8 @@
 
 <img src="https://img.shields.io/badge/65K+-Users-8ce2ff?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHRpdGxlPmFjY291bnQtZ3JvdXA8L3RpdGxlPjxwYXRoIGQ9Ik0xMiwxMi43NUM3LDEyLjc1IDMsMTMuMzUgMywxNi4yNVYxOEgyMVYxNi4yNUMyMSwxMy4zNSAxNywxMi43NSAxMiwxMi43NU0xNyw3QTE3LDE3IDAgMCwxIDE3LDdNMjEsMTYuMjVWMThIMjRWMTYuMjVDMjQsMTQuNDMgMjEuNSwxMy44NyAxOSwxMy41QzIwLjEyLDE0LjEgMjEsMTUgMjEsMTYuMjVNMiw3QTIsMiAwIDAsMSA0LDVIMjBBMiwyIDAgMCwxIDIyLDdBMiwyIDAgMCwxIDIwLDlINEEyLDIgMCAwLDEgMiw3TTEyLDEwQTMsMyAwIDAsMSA5LDdBMywzIDAgMCwxIDEyLDRBMywzIDAgMCwxIDE1LDdBMywzIDAgMCwxIDEyLDEwWiIgZmlsbD0id2hpdGUiIC8+PC9zdmc+&labelColor=0782ab"/>
 
-    </br>
-    </br>
+</br>
+</br>
 
 <a href="https://github.com/OpenHub-Store/GitHub-Store/releases/latest">
   <img src="https://img.shields.io/github/v/release/OpenHub-Store/GitHub-Store?color=a1168e&include_prereleases&logo=github&style=for-the-badge&labelColor=700f63"/>
@@ -40,8 +40,8 @@
   <img src="https://img.shields.io/f-droid/v/zed.rainxch.githubstore?color=a1168e&include_prereleases&logo=FDROID&style=for-the-badge&labelColor=700f63"/>
 </a>
 
-    </br>
-    </br>
+</br>
+</br>
 
 
 <p align="center"> 
