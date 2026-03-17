@@ -1,6 +1,7 @@
 package zed.rainxch.apps.presentation
 
 import zed.rainxch.core.domain.model.DeviceApp
+import zed.rainxch.core.domain.model.GithubAsset
 import zed.rainxch.core.domain.model.InstalledApp
 
 sealed interface AppsAction {
@@ -50,6 +51,8 @@ sealed interface AppsAction {
     data class OnRepoUrlChanged(val url: String) : AppsAction
     data object OnValidateAndLinkRepo : AppsAction
     data object OnBackToAppPicker : AppsAction
+    data class OnLinkAssetSelected(val asset: GithubAsset) : AppsAction
+    data object OnBackToEnterUrl : AppsAction
 
     // Export/Import
     data object OnExportApps : AppsAction

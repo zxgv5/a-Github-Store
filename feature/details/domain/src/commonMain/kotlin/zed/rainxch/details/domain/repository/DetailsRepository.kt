@@ -41,4 +41,10 @@ interface DetailsRepository {
     ): RepoStats
 
     suspend fun getUserProfile(username: String): GithubUserProfile
+
+    suspend fun checkAttestations(
+        owner: String,
+        repo: String,
+        sha256Digest: String,
+    ): Boolean
 }

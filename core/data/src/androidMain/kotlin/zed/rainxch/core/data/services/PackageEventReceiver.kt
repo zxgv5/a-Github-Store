@@ -23,7 +23,9 @@ import zed.rainxch.core.domain.system.PackageMonitor
  * Uses [KoinComponent] for the no-arg constructor path (manifest-registered).
  * The constructor with explicit dependencies is used for dynamic registration.
  */
-class PackageEventReceiver() : BroadcastReceiver(), KoinComponent {
+class PackageEventReceiver() :
+    BroadcastReceiver(),
+    KoinComponent {
     private val installedAppsRepositoryKoin: InstalledAppsRepository by inject()
     private val packageMonitorKoin: PackageMonitor by inject()
 
@@ -41,11 +43,9 @@ class PackageEventReceiver() : BroadcastReceiver(), KoinComponent {
         this.explicitMonitor = packageMonitor
     }
 
-    private fun getRepository(): InstalledAppsRepository =
-        explicitRepository ?: installedAppsRepositoryKoin
+    private fun getRepository(): InstalledAppsRepository = explicitRepository ?: installedAppsRepositoryKoin
 
-    private fun getMonitor(): PackageMonitor =
-        explicitMonitor ?: packageMonitorKoin
+    private fun getMonitor(): PackageMonitor = explicitMonitor ?: packageMonitorKoin
 
     override fun onReceive(
         context: Context?,
@@ -94,6 +94,7 @@ class PackageEventReceiver() : BroadcastReceiver(), KoinComponent {
                             newAssetUrl = app.latestAssetUrl ?: "",
                             newVersionName = systemInfo.versionName,
                             newVersionCode = systemInfo.versionCode,
+                            signingFingerprint = app.signingFingerprint,
                         )
                         repo.updatePendingStatus(packageName, false)
                         Logger.i { "Update confirmed via broadcast: $packageName (v${systemInfo.versionName})" }

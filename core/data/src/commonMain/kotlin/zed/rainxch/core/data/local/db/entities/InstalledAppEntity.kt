@@ -23,6 +23,7 @@ data class InstalledAppEntity(
     val latestAssetSize: Long?,
     val appName: String,
     val installSource: InstallSource,
+    val signingFingerprint: String?,
     val installedAt: Long,
     val lastCheckedAt: Long,
     val lastUpdatedAt: Long,

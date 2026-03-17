@@ -33,6 +33,7 @@ interface InstalledAppsRepository {
         newAssetUrl: String,
         newVersionName: String,
         newVersionCode: Long,
+        signingFingerprint: String?,
     )
 
     suspend fun updateApp(app: InstalledApp)

@@ -35,6 +35,7 @@ fun InstalledApp.toEntity(): InstalledAppEntity =
         installedVersionCode = installedVersionCode,
         latestVersionName = latestVersionName,
         latestVersionCode = latestVersionCode,
+        signingFingerprint = signingFingerprint,
     )
 
 fun InstalledAppEntity.toDomain(): InstalledApp =
@@ -69,4 +70,5 @@ fun InstalledAppEntity.toDomain(): InstalledApp =
         installedVersionCode = installedVersionCode,
         latestVersionName = latestVersionName,
         latestVersionCode = latestVersionCode,
+        signingFingerprint = signingFingerprint,
     )

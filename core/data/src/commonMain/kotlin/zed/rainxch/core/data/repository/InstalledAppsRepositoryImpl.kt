@@ -126,11 +126,12 @@ class InstalledAppsRepositoryImpl(
 
                 // Only flag as update if the latest version is actually newer
                 // (not just different — avoids false "downgrade" notifications)
-                val isUpdateAvailable = if (normalizedInstalledTag == normalizedLatestTag) {
-                    false
-                } else {
-                    isVersionNewer(normalizedLatestTag, normalizedInstalledTag)
-                }
+                val isUpdateAvailable =
+                    if (normalizedInstalledTag == normalizedLatestTag) {
+                        false
+                    } else {
+                        isVersionNewer(normalizedLatestTag, normalizedInstalledTag)
+                    }
 
                 Logger.d {
                     "Update check for ${app.appName}: " +
@@ -184,6 +185,7 @@ class InstalledAppsRepositoryImpl(
         newAssetUrl: String,
         newVersionName: String,
         newVersionCode: Long,
+        signingFingerprint: String?,
     ) {
         val app = installedAppsDao.getAppByPackage(packageName) ?: return
 
@@ -220,6 +222,7 @@ class InstalledAppsRepositoryImpl(
                 isUpdateAvailable = false,
                 lastUpdatedAt = System.currentTimeMillis(),
                 lastCheckedAt = System.currentTimeMillis(),
+                signingFingerprint = signingFingerprint,
             ),
         )
     }
@@ -249,7 +252,10 @@ class InstalledAppsRepositoryImpl(
      * This prevents false "downgrade" notifications when a user has a pre-release
      * installed and the latest stable version has a lower or equal base version.
      */
-    private fun isVersionNewer(candidate: String, current: String): Boolean {
+    private fun isVersionNewer(
+        candidate: String,
+        current: String,
+    ): Boolean {
         val candidateParsed = parseSemanticVersion(candidate)
         val currentParsed = parseSemanticVersion(current)
 
@@ -264,11 +270,21 @@ class InstalledAppsRepositoryImpl(
             // Numbers are equal; compare pre-release suffixes
             // No pre-release > has pre-release (e.g., 1.0.0 > 1.0.0-beta)
             return when {
-                candidateParsed.preRelease == null && currentParsed.preRelease != null -> true
-                candidateParsed.preRelease != null && currentParsed.preRelease == null -> false
-                candidateParsed.preRelease != null && currentParsed.preRelease != null ->
+                candidateParsed.preRelease == null && currentParsed.preRelease != null -> {
+                    true
+                }
+
+                candidateParsed.preRelease != null && currentParsed.preRelease == null -> {
+                    false
+                }
+
+                candidateParsed.preRelease != null && currentParsed.preRelease != null -> {
                     comparePreRelease(candidateParsed.preRelease, currentParsed.preRelease) > 0
-                else -> false // both null, versions are equal
+                }
+
+                else -> {
+                    false
+                } // both null, versions are equal
             }
         }
 
@@ -303,7 +319,10 @@ class InstalledAppsRepositoryImpl(
      * Numeric identifiers always have lower precedence than alphanumeric.
      * A larger set of pre-release fields has higher precedence if all preceding are equal.
      */
-    private fun comparePreRelease(a: String, b: String): Int {
+    private fun comparePreRelease(
+        a: String,
+        b: String,
+    ): Int {
         val aParts = a.split(".")
         val bParts = b.split(".")
 
@@ -311,12 +330,17 @@ class InstalledAppsRepositoryImpl(
             val aNum = aParts[i].toIntOrNull()
             val bNum = bParts[i].toIntOrNull()
 
-            val cmp = when {
-                aNum != null && bNum != null -> aNum.compareTo(bNum)
-                aNum != null -> -1 // numeric < alphanumeric
-                bNum != null -> 1
-                else -> aParts[i].compareTo(bParts[i])
-            }
+            val cmp =
+                when {
+                    aNum != null && bNum != null -> aNum.compareTo(bNum)
+
+                    aNum != null -> -1
+
+                    // numeric < alphanumeric
+                    bNum != null -> 1
+
+                    else -> aParts[i].compareTo(bParts[i])
+                }
             if (cmp != 0) return cmp
         }
 

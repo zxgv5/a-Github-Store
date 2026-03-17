@@ -5,10 +5,6 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpHeaders
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.Serializable
 import zed.rainxch.core.data.cache.CacheManager
 import zed.rainxch.core.data.cache.CacheManager.CacheTtl.README
@@ -20,6 +16,7 @@ import zed.rainxch.core.data.dto.ReleaseNetwork
 import zed.rainxch.core.data.dto.RepoByIdNetwork
 import zed.rainxch.core.data.dto.RepoInfoNetwork
 import zed.rainxch.core.data.dto.UserProfileNetwork
+import zed.rainxch.details.data.dto.AttestationsResponse
 import zed.rainxch.core.data.mappers.toDomain
 import zed.rainxch.core.data.network.executeRequest
 import zed.rainxch.core.data.services.LocalizationManager
@@ -275,136 +272,29 @@ class DetailsRepositoryImpl(
         repo: String,
         defaultBranch: String,
     ): Triple<String, String?, String>? {
-        val attempts = readmeHelper.generateReadmeAttempts()
         val baseUrl = "https://raw.githubusercontent.com/$owner/$repo/$defaultBranch/"
-        val primaryLang = localizationManager.getPrimaryLanguageCode()
+        val path = "README.md"
 
-        logger.debug(
-            "Attempting to fetch README for language preference: ${localizationManager.getCurrentLanguageCode()}",
-        )
+        return try {
+            val rawMarkdown =
+                httpClient
+                    .executeRequest<String> {
+                        get("$baseUrl$path")
+                    }.getOrNull()
 
-        val foundReadmes =
-            coroutineScope {
-                attempts
-                    .map { attempt ->
-                        async(start = CoroutineStart.LAZY) {
-                            try {
-                                logger.debug("Trying ${attempt.path} (priority: ${attempt.priority})...")
-
-                                val rawMarkdown =
-                                    httpClient
-                                        .executeRequest<String> {
-                                            get("$baseUrl${attempt.path}")
-                                        }.getOrNull()
-
-                                if (rawMarkdown != null) {
-                                    logger.debug("Successfully fetched ${attempt.path}")
-
-                                    val processed =
-                                        preprocessMarkdown(
-                                            markdown = rawMarkdown,
-                                            baseUrl = baseUrl,
-                                        )
-
-                                    val detectedLang = readmeHelper.detectReadmeLanguage(processed)
-                                    logger.debug("Detected language: ${detectedLang ?: "unknown"} for ${attempt.path}")
-
-                                    attempt to Pair(processed, detectedLang)
-                                } else {
-                                    null
-                                }
-                            } catch (e: Throwable) {
-                                logger.debug("Failed to fetch ${attempt.path}: ${e.message}")
-                                null
-                            }
-                        }
-                    }.also { asyncTasks ->
-                        asyncTasks.take(6).forEach { it.start() }
-                    }.awaitAll()
-                    .filterNotNull()
-                    .associateBy({ it.first }, { it.second })
+            if (rawMarkdown != null) {
+                val processed = preprocessMarkdown(markdown = rawMarkdown, baseUrl = baseUrl)
+                val detectedLang = readmeHelper.detectReadmeLanguage(processed)
+                logger.debug("Fetched README.md (detected language: ${detectedLang ?: "unknown"})")
+                Triple(processed, detectedLang, path)
+            } else {
+                logger.error("Failed to fetch README.md for $owner/$repo")
+                null
             }
-
-        if (foundReadmes.isEmpty()) {
-            logger.error("Failed to fetch any README variant.")
-            return null
+        } catch (e: Throwable) {
+            logger.error("Failed to fetch README.md: ${e.message}")
+            null
         }
-
-        foundReadmes.entries
-            .firstOrNull { (attempt, content) ->
-                attempt.filename != "README.md" && content.second == primaryLang
-            }?.let { (attempt, content) ->
-                logger.debug("Found localized README matching user language: ${attempt.path}")
-                return Triple(content.first, content.second, attempt.path)
-            }
-
-        foundReadmes.entries
-            .firstOrNull { (attempt, _) ->
-                attempt.filename.contains(".$primaryLang.", ignoreCase = true) ||
-                    attempt.filename.contains("-${primaryLang.uppercase()}.", ignoreCase = true)
-            }?.let { (attempt, content) ->
-                logger.debug("Found explicit language file for user: ${attempt.path}")
-                return Triple(content.first, content.second ?: primaryLang, attempt.path)
-            }
-
-        foundReadmes.entries
-            .firstOrNull { (attempt, content) ->
-                attempt.filename == "README.md" && content.second == primaryLang
-            }?.let { (attempt, content) ->
-                logger.debug("Default README matches user language: ${attempt.path}")
-                return Triple(content.first, content.second, attempt.path)
-            }
-
-        if (primaryLang == "en") {
-            foundReadmes.entries
-                .firstOrNull { (_, content) ->
-                    content.second == "en"
-                }?.let { (attempt, content) ->
-                    logger.debug("Found English README for English user: ${attempt.path}")
-                    return Triple(content.first, content.second, attempt.path)
-                }
-        }
-
-        foundReadmes.entries
-            .firstOrNull { (_, content) ->
-                content.second == primaryLang
-            }?.let { (attempt, content) ->
-                logger.debug("Fallback: Using README matching user language: ${attempt.path}")
-                return Triple(content.first, content.second, attempt.path)
-            }
-
-        if (primaryLang == "en") {
-            foundReadmes.entries
-                .firstOrNull { (_, content) ->
-                    content.second == "en"
-                }?.let { (attempt, content) ->
-                    logger.debug("Fallback: Using English README: ${attempt.path}")
-                    return Triple(content.first, content.second, attempt.path)
-                }
-        }
-
-        foundReadmes.entries
-            .firstOrNull { (attempt, _) ->
-                attempt.path == "README.md"
-            }?.let { (attempt, content) ->
-                logger.debug("Fallback: Using root README.md (language: ${content.second}): ${attempt.path}")
-                return Triple(content.first, content.second, attempt.path)
-            }
-
-        foundReadmes.entries
-            .firstOrNull { (attempt, _) ->
-                attempt.path.startsWith(".github/")
-            }?.let { (attempt, content) ->
-                logger.debug("Fallback: Using .github README: ${attempt.path}")
-                return Triple(content.first, content.second, attempt.path)
-            }
-
-        foundReadmes.entries.minByOrNull { it.key.priority }?.let { (attempt, content) ->
-            logger.debug("Fallback: Using highest priority README: ${attempt.path}")
-            return Triple(content.first, content.second, attempt.path)
-        }
-
-        return null
     }
 
     override suspend fun getRepoStats(
@@ -489,4 +379,24 @@ class DetailsRepositoryImpl(
             throw e
         }
     }
+
+    override suspend fun checkAttestations(
+        owner: String,
+        repo: String,
+        sha256Digest: String,
+    ): Boolean =
+        try {
+            val response =
+                httpClient
+                    .executeRequest<AttestationsResponse> {
+                        get("/repos/$owner/$repo/attestations/sha256:$sha256Digest") {
+                            header(HttpHeaders.Accept, "application/vnd.github+json")
+                        }
+                    }.getOrNull()
+            response != null && response.attestations.isNotEmpty()
+        } catch (e: Exception) {
+            logger.debug("Attestation check failed for $owner/$repo: ${e.message}")
+            false
+        }
+
 }

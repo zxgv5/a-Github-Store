@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,6 +50,7 @@ import zed.rainxch.apps.presentation.AppsAction
 import zed.rainxch.apps.presentation.AppsState
 import zed.rainxch.apps.presentation.LinkStep
 import zed.rainxch.core.domain.model.DeviceApp
+import zed.rainxch.core.domain.model.GithubAsset
 import zed.rainxch.githubstore.core.presentation.res.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,7 +68,7 @@ fun LinkAppBottomSheet(
         AnimatedContent(
             targetState = state.linkStep,
             transitionSpec = {
-                if (targetState == LinkStep.EnterUrl) {
+                if (targetState.ordinal > initialState.ordinal) {
                     (slideInHorizontally { it } + fadeIn()) togetherWith
                         (slideOutHorizontally { -it } + fadeOut())
                 } else {
@@ -89,9 +91,20 @@ fun LinkAppBottomSheet(
                     repoUrl = state.repoUrl,
                     isValidating = state.isValidatingRepo,
                     validationError = state.repoValidationError,
+                    validationStatus = state.linkValidationStatus,
                     onUrlChanged = { onAction(AppsAction.OnRepoUrlChanged(it)) },
                     onConfirm = { onAction(AppsAction.OnValidateAndLinkRepo) },
                     onBack = { onAction(AppsAction.OnBackToAppPicker) },
+                )
+
+                LinkStep.PickAsset -> PickAssetStep(
+                    assets = state.linkInstallableAssets,
+                    selectedAsset = state.linkSelectedAsset,
+                    downloadProgress = state.linkDownloadProgress,
+                    validationStatus = state.linkValidationStatus,
+                    validationError = state.repoValidationError,
+                    onAssetSelected = { onAction(AppsAction.OnLinkAssetSelected(it)) },
+                    onBack = { onAction(AppsAction.OnBackToEnterUrl) },
                 )
             }
         }
@@ -239,6 +252,7 @@ private fun EnterUrlStep(
     repoUrl: String,
     isValidating: Boolean,
     validationError: String?,
+    validationStatus: String?,
     onUrlChanged: (String) -> Unit,
     onConfirm: () -> Unit,
     onBack: () -> Unit,
@@ -338,5 +352,154 @@ private fun EnterUrlStep(
                 )
             }
         }
+
+        if (isValidating && validationStatus != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = validationStatus,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
+
+@Composable
+private fun PickAssetStep(
+    assets: List<GithubAsset>,
+    selectedAsset: GithubAsset?,
+    downloadProgress: Int?,
+    validationStatus: String?,
+    validationError: String?,
+    onAssetSelected: (GithubAsset) -> Unit,
+    onBack: () -> Unit,
+) {
+    val isProcessing = selectedAsset != null
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 24.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack, enabled = !isProcessing) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                )
+            }
+
+            Text(
+                text = stringResource(Res.string.select_asset_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+
+        Spacer(Modifier.height(4.dp))
+
+        Text(
+            text = stringResource(Res.string.select_asset_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp),
+        ) {
+            items(
+                items = assets,
+                key = { it.id },
+            ) { asset ->
+                val isSelected = selectedAsset?.id == asset.id
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (isSelected) {
+                                Modifier.background(
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                    RoundedCornerShape(8.dp),
+                                )
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .clickable(enabled = !isProcessing) { onAssetSelected(asset) }
+                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = asset.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = formatFileSize(asset.size),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    if (isSelected && downloadProgress != null) {
+                        Spacer(Modifier.width(8.dp))
+                        CircularProgressIndicator(
+                            progress = { downloadProgress / 100f },
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "$downloadProgress%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                )
+            }
+        }
+
+        if (validationStatus != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = validationStatus,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        if (validationError != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = validationError,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+}
+
+private fun formatFileSize(bytes: Long): String =
+    when {
+        bytes >= 1_073_741_824 -> "%.1f GB".format(bytes / 1_073_741_824.0)
+        bytes >= 1_048_576 -> "%.1f MB".format(bytes / 1_048_576.0)
+        bytes >= 1_024 -> "%.1f KB".format(bytes / 1_024.0)
+        else -> "$bytes B"
+    }

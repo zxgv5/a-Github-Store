@@ -9,9 +9,11 @@ import zed.rainxch.core.domain.model.SystemArchitecture
 import zed.rainxch.details.domain.model.ReleaseCategory
 import zed.rainxch.details.domain.model.RepoStats
 import zed.rainxch.details.presentation.model.DowngradeWarning
+import zed.rainxch.details.presentation.model.SigningKeyWarning
 import zed.rainxch.details.presentation.model.DownloadStage
 import zed.rainxch.details.presentation.model.InstallLogItem
 import zed.rainxch.details.presentation.model.TranslationState
+import zed.rainxch.details.presentation.model.AttestationStatus
 import zed.rainxch.details.presentation.model.TranslationTarget
 
 data class DetailsState(
@@ -59,9 +61,11 @@ data class DetailsState(
     val deviceLanguageCode: String = "en",
     val isComingFromUpdate: Boolean = false,
     val downgradeWarning: DowngradeWarning? = null,
+    val signingKeyWarning: SigningKeyWarning? = null,
     val showExternalInstallerPrompt: Boolean = false,
     val pendingInstallFilePath: String? = null,
     val showUninstallConfirmation: Boolean = false,
+    val attestationStatus: AttestationStatus = AttestationStatus.UNCHECKED,
 ) {
     val filteredReleases: List<GithubRelease>
         get() =

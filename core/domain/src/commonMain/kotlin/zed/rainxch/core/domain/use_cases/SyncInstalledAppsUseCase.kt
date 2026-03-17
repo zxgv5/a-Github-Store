@@ -31,11 +31,6 @@ class SyncInstalledAppsUseCase(
         private const val PENDING_TIMEOUT_MS = 24 * 60 * 60 * 1000L // 24 hours
     }
 
-    /**
-     * Executes the sync operation.
-     *
-     * @return Result indicating success or failure with error details
-     */
     suspend operator fun invoke(): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {

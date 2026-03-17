@@ -4,6 +4,7 @@ import zed.rainxch.apps.domain.model.GithubRepoInfo
 import zed.rainxch.apps.presentation.model.AppItem
 import zed.rainxch.apps.presentation.model.UpdateAllProgress
 import zed.rainxch.core.domain.model.DeviceApp
+import zed.rainxch.core.domain.model.GithubAsset
 import zed.rainxch.core.domain.model.InstalledApp
 
 data class AppsState(
@@ -26,6 +27,10 @@ data class AppsState(
     val repoUrl: String = "",
     val isValidatingRepo: Boolean = false,
     val repoValidationError: String? = null,
+    val linkValidationStatus: String? = null,
+    val linkInstallableAssets: List<GithubAsset> = emptyList(),
+    val linkSelectedAsset: GithubAsset? = null,
+    val linkDownloadProgress: Int? = null,
     val fetchedRepoInfo: GithubRepoInfo? = null,
     // Export/Import
     val isExporting: Boolean = false,
@@ -34,17 +39,19 @@ data class AppsState(
     val appPendingUninstall: InstalledApp? = null,
 ) {
     val filteredDeviceApps: List<DeviceApp>
-        get() = if (deviceAppSearchQuery.isBlank()) {
-            deviceApps
-        } else {
-            deviceApps.filter {
-                it.appName.contains(deviceAppSearchQuery, ignoreCase = true) ||
-                    it.packageName.contains(deviceAppSearchQuery, ignoreCase = true)
+        get() =
+            if (deviceAppSearchQuery.isBlank()) {
+                deviceApps
+            } else {
+                deviceApps.filter {
+                    it.appName.contains(deviceAppSearchQuery, ignoreCase = true) ||
+                        it.packageName.contains(deviceAppSearchQuery, ignoreCase = true)
+                }
             }
-        }
 }
 
 enum class LinkStep {
     PickApp,
     EnterUrl,
+    PickAsset,
 }

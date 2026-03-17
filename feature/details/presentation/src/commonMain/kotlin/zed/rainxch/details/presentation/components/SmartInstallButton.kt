@@ -1,5 +1,8 @@
 package zed.rainxch.details.presentation.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,7 +24,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Update
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -43,6 +49,7 @@ import zed.rainxch.core.domain.model.GithubAsset
 import zed.rainxch.core.domain.model.GithubUser
 import zed.rainxch.details.presentation.DetailsAction
 import zed.rainxch.details.presentation.DetailsState
+import zed.rainxch.details.presentation.model.AttestationStatus
 import zed.rainxch.details.presentation.model.DownloadStage
 import zed.rainxch.details.presentation.utils.LocalTopbarLiquidState
 import zed.rainxch.details.presentation.utils.extractArchitectureFromName
@@ -50,6 +57,8 @@ import zed.rainxch.details.presentation.utils.isExactArchitectureMatch
 import zed.rainxch.githubstore.core.presentation.res.Res
 import zed.rainxch.githubstore.core.presentation.res.architecture_compatible
 import zed.rainxch.githubstore.core.presentation.res.cancel_download
+import zed.rainxch.githubstore.core.presentation.res.checking_attestation
+import zed.rainxch.githubstore.core.presentation.res.verified_build
 import zed.rainxch.githubstore.core.presentation.res.downloading
 import zed.rainxch.githubstore.core.presentation.res.install_latest
 import zed.rainxch.githubstore.core.presentation.res.install_version
@@ -97,11 +106,11 @@ fun SmartInstallButton(
 
     // When same version is installed, show Open button
     if (isSameVersionInstalled && !isActiveDownload) {
-        Row(
-            modifier = modifier,
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
+        Column(modifier = modifier) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
             // Uninstall button
             ElevatedCard(
                 onClick = { onAction(DetailsAction.OnRequestUninstall) },
@@ -191,6 +200,9 @@ fun SmartInstallButton(
                     }
                 }
             }
+            }
+
+            AttestationBadge(attestationStatus = state.attestationStatus)
         }
         return
     }
@@ -530,6 +542,53 @@ fun SmartInstallButton(
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         },
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AttestationBadge(attestationStatus: AttestationStatus) {
+    AnimatedVisibility(
+        visible = attestationStatus == AttestationStatus.VERIFIED || attestationStatus == AttestationStatus.CHECKING,
+        enter = fadeIn(),
+        exit = fadeOut(),
+    ) {
+        Row(
+            modifier = Modifier.padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            when (attestationStatus) {
+                AttestationStatus.CHECKING -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(14.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(Res.string.checking_attestation),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                AttestationStatus.VERIFIED -> {
+                    Icon(
+                        imageVector = Icons.Filled.VerifiedUser,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.tertiary,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(Res.string.verified_build),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                else -> {}
             }
         }
     }

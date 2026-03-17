@@ -5,4 +5,5 @@ data class ApkPackageInfo(
     val versionName: String,
     val versionCode: Long,
     val appName: String,
+    val signingFingerprint: String?,
 )

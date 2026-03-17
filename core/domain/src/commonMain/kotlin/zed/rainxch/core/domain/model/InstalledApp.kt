@@ -22,6 +22,7 @@ data class InstalledApp(
     val lastCheckedAt: Long,
     val lastUpdatedAt: Long,
     val isUpdateAvailable: Boolean,
+    val signingFingerprint: String?,
     val updateCheckEnabled: Boolean = true,
     val releaseNotes: String? = "",
     val systemArchitecture: String,

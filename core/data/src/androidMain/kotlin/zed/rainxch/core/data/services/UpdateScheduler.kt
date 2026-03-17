@@ -37,8 +37,6 @@ object UpdateScheduler {
                     TimeUnit.MINUTES,
                 ).build()
 
-        // KEEP preserves the existing schedule so reopening the app doesn't reset the timer.
-        // The schedule is only created fresh on first install or after cancel().
         WorkManager
             .getInstance(context)
             .enqueueUniquePeriodicWork(
@@ -47,10 +45,6 @@ object UpdateScheduler {
                 request = request,
             )
 
-        // Run an immediate one-time check so users get notified sooner
-        // rather than waiting up to intervalHours for the first periodic run.
-        // Uses REPLACE so each app launch gets a fresh check (the previous one-time
-        // work may have already completed).
         val immediateRequest =
             OneTimeWorkRequestBuilder<UpdateCheckWorker>()
                 .setConstraints(constraints)
@@ -68,11 +62,6 @@ object UpdateScheduler {
         Logger.i { "UpdateScheduler: Scheduled periodic update check every ${intervalHours}h + immediate check" }
     }
 
-    /**
-     * Force-reschedules the periodic update check with a new interval.
-     * Uses UPDATE policy to replace the existing schedule immediately.
-     * Call this when the user changes the update check interval in settings.
-     */
     fun reschedule(
         context: Context,
         intervalHours: Long,
@@ -105,10 +94,6 @@ object UpdateScheduler {
         Logger.i { "UpdateScheduler: Rescheduled periodic update check to every ${intervalHours}h" }
     }
 
-    /**
-     * Enqueues a one-time [AutoUpdateWorker] to download and silently install
-     * all available updates via Shizuku. Uses KEEP policy to avoid duplicate runs.
-     */
     fun scheduleAutoUpdate(context: Context) {
         val constraints =
             Constraints
@@ -123,8 +108,7 @@ object UpdateScheduler {
                     BackoffPolicy.EXPONENTIAL,
                     15,
                     TimeUnit.MINUTES,
-                )
-                .build()
+                ).build()
 
         WorkManager
             .getInstance(context)
