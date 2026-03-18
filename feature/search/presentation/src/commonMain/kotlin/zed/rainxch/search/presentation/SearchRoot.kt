@@ -20,8 +20,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
@@ -56,7 +54,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -80,41 +77,31 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.fletchmckee.liquid.liquefiable
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import zed.rainxch.core.domain.model.GithubRepoSummary
 import zed.rainxch.core.presentation.components.GithubStoreButton
 import zed.rainxch.core.presentation.components.RepositoryCard
 import zed.rainxch.core.presentation.locals.LocalBottomNavigationHeight
 import zed.rainxch.core.presentation.locals.LocalBottomNavigationLiquid
 import zed.rainxch.core.presentation.theme.GithubStoreTheme
 import zed.rainxch.core.presentation.utils.ObserveAsEvents
-import zed.rainxch.domain.model.ProgrammingLanguage
-import zed.rainxch.domain.model.SearchPlatform
-import zed.rainxch.domain.model.SortBy
-import zed.rainxch.githubstore.core.presentation.res.Res
-import zed.rainxch.githubstore.core.presentation.res.clipboard_link_detected
-import zed.rainxch.githubstore.core.presentation.res.detected_links
-import zed.rainxch.githubstore.core.presentation.res.dismiss
-import zed.rainxch.githubstore.core.presentation.res.language_label
-import zed.rainxch.githubstore.core.presentation.res.open_github_link
-import zed.rainxch.githubstore.core.presentation.res.open_in_app
-import zed.rainxch.githubstore.core.presentation.res.results_found
-import zed.rainxch.githubstore.core.presentation.res.retry
-import zed.rainxch.githubstore.core.presentation.res.search_repositories_hint
-import zed.rainxch.githubstore.core.presentation.res.sort_label
+import zed.rainxch.githubstore.core.presentation.res.*
 import zed.rainxch.search.presentation.components.LanguageFilterBottomSheet
 import zed.rainxch.search.presentation.components.SortByBottomSheet
-import zed.rainxch.search.presentation.utils.ParsedGithubLink
+import zed.rainxch.search.presentation.model.ParsedGithubLink
+import zed.rainxch.search.presentation.model.ProgrammingLanguageUi
+import zed.rainxch.search.presentation.model.SearchPlatformUi
+import zed.rainxch.search.presentation.model.SortByUi
 import zed.rainxch.search.presentation.utils.label
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchRoot(
     onNavigateBack: () -> Unit,
-    onNavigateToDetails: (GithubRepoSummary) -> Unit,
+    onNavigateToDetails: (repoId: Long) -> Unit,
     onNavigateToDetailsFromLink: (owner: String, repo: String) -> Unit,
     onNavigateToDeveloperProfile: (username: String) -> Unit,
     viewModel: SearchViewModel = koinViewModel(),
@@ -143,7 +130,7 @@ fun SearchRoot(
         onAction = { action ->
             when (action) {
                 is SearchAction.OnRepositoryClick -> {
-                    onNavigateToDetails(action.repository)
+                    onNavigateToDetails(action.repository.id)
                 }
 
                 SearchAction.OnNavigateBackClick -> {
@@ -175,7 +162,6 @@ fun SearchRoot(
 
     if (state.isSortByDialogVisible) {
         SortByBottomSheet(
-            sortByOptions = SortBy.entries,
             selectedSortBy = state.selectedSortBy,
             selectedSortOrder = state.selectedSortOrder,
             onSortBySelected = { sortBy ->
@@ -353,7 +339,7 @@ fun SearchScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                items(SearchPlatform.entries) { sortBy ->
+                items(SearchPlatformUi.entries) { sortBy ->
                     FilterChip(
                         selected = state.selectedSearchPlatform == sortBy,
                         label = {
@@ -391,7 +377,7 @@ fun SearchScreen(
                     )
 
                     FilterChip(
-                        selected = state.selectedLanguage != ProgrammingLanguage.All,
+                        selected = state.selectedLanguage != ProgrammingLanguageUi.All,
                         onClick = {
                             onAction(SearchAction.OnToggleLanguageSheetVisibility)
                         },
@@ -414,10 +400,10 @@ fun SearchScreen(
                         },
                     )
 
-                    if (state.selectedLanguage != ProgrammingLanguage.All) {
+                    if (state.selectedLanguage != ProgrammingLanguageUi.All) {
                         IconButton(
                             onClick = {
-                                onAction(SearchAction.OnLanguageSelected(ProgrammingLanguage.All))
+                                onAction(SearchAction.OnLanguageSelected(ProgrammingLanguageUi.All))
                             },
                             modifier = Modifier.size(32.dp),
                         ) {
@@ -443,7 +429,7 @@ fun SearchScreen(
                     )
 
                     FilterChip(
-                        selected = state.selectedSortBy != SortBy.BestMatch,
+                        selected = state.selectedSortBy != SortByUi.BestMatch,
                         onClick = {
                             onAction(SearchAction.OnToggleSortByDialogVisibility)
                         },
@@ -540,7 +526,7 @@ fun SearchScreen(
                             key = { it.repository.id },
                         ) { discoveryRepository ->
                             RepositoryCard(
-                                discoveryRepository = discoveryRepository,
+                                discoveryRepositoryUi = discoveryRepository,
                                 onClick = {
                                     onAction(SearchAction.OnRepositoryClick(discoveryRepository.repository))
                                 },
@@ -581,7 +567,7 @@ fun SearchScreen(
 
 @Composable
 private fun ClipboardBanner(
-    links: List<ParsedGithubLink>,
+    links: ImmutableList<ParsedGithubLink>,
     onOpenLink: (ParsedGithubLink) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -667,7 +653,7 @@ private fun ClipboardBanner(
 
 @Composable
 private fun DetectedLinksSection(
-    links: List<ParsedGithubLink>,
+    links: ImmutableList<ParsedGithubLink>,
     onOpenLink: (ParsedGithubLink) -> Unit,
 ) {
     Column(

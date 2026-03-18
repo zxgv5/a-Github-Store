@@ -8,6 +8,7 @@
     <string name="cannot_launch">Не удалось запустить %1$s</string>
     <string name="failed_to_open">Не удалось открыть %1$s</string>
     <string name="failed_to_update">Не удалось обновить %1$s: %2$s</string>
+    <string name="update_failed">Ошибка обновления</string>
     <string name="update_all_failed">Ошибка обновления всех: %1$s</string>
     <string name="all_apps_updated_successfully">Все приложения успешно обновлены</string>
     <string name="no_updates_available">Обновлений нет</string>
@@ -543,4 +544,6 @@
     <string name="translation_error_retry">Повторить</string>
     <string name="translated_from">Автоопределение: %1$s</string>
     <string name="select_language">Выбрать язык</string>
+    <string name="update_package_mismatch">Несоответствие пакета: APK — %1$s, но установленное приложение — %2$s. Обновление заблокировано.</string>
+    <string name="update_signing_key_mismatch">Несоответствие ключа подписи: обновление подписано другим разработчиком. Обновление заблокировано.</string>
 </resources>

@@ -15,20 +15,11 @@ kotlin {
 
                 implementation(libs.jetbrains.lifecycle.compose)
                 implementation(libs.kotlinx.datetime)
+                implementation(libs.kotlinx.collections.immutable)
 
                 implementation(compose.components.resources)
 
                 implementation(libs.androidx.compose.ui.tooling.preview)
-            }
-        }
-
-        androidMain {
-            dependencies {
-            }
-        }
-
-        jvmMain {
-            dependencies {
             }
         }
     }

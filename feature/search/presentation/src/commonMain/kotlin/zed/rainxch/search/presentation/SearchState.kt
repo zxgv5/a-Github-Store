@@ -1,19 +1,21 @@
 package zed.rainxch.search.presentation
 
-import zed.rainxch.core.presentation.model.DiscoveryRepository
-import zed.rainxch.domain.model.ProgrammingLanguage
-import zed.rainxch.domain.model.SearchPlatform
-import zed.rainxch.domain.model.SortBy
-import zed.rainxch.domain.model.SortOrder
-import zed.rainxch.search.presentation.utils.ParsedGithubLink
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import zed.rainxch.core.presentation.model.DiscoveryRepositoryUi
+import zed.rainxch.search.presentation.model.ParsedGithubLink
+import zed.rainxch.search.presentation.model.ProgrammingLanguageUi
+import zed.rainxch.search.presentation.model.SearchPlatformUi
+import zed.rainxch.search.presentation.model.SortByUi
+import zed.rainxch.search.presentation.model.SortOrderUi
 
 data class SearchState(
     val query: String = "",
-    val repositories: List<DiscoveryRepository> = emptyList(),
-    val selectedSearchPlatform: SearchPlatform = SearchPlatform.All,
-    val selectedSortBy: SortBy = SortBy.BestMatch,
-    val selectedSortOrder: SortOrder = SortOrder.Descending,
-    val selectedLanguage: ProgrammingLanguage = ProgrammingLanguage.All,
+    val repositories: ImmutableList<DiscoveryRepositoryUi> = persistentListOf(),
+    val selectedSearchPlatform: SearchPlatformUi = SearchPlatformUi.All,
+    val selectedSortBy: SortByUi = SortByUi.BestMatch,
+    val selectedSortOrder: SortOrderUi = SortOrderUi.Descending,
+    val selectedLanguage: ProgrammingLanguageUi = ProgrammingLanguageUi.All,
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
     val errorMessage: String? = null,
@@ -21,8 +23,8 @@ data class SearchState(
     val totalCount: Int? = null,
     val isLanguageSheetVisible: Boolean = false,
     val isSortByDialogVisible: Boolean = false,
-    val detectedLinks: List<ParsedGithubLink> = emptyList(),
-    val clipboardLinks: List<ParsedGithubLink> = emptyList(),
+    val detectedLinks: ImmutableList<ParsedGithubLink> = persistentListOf(),
+    val clipboardLinks: ImmutableList<ParsedGithubLink> = persistentListOf(),
     val isClipboardBannerVisible: Boolean = false,
     val autoDetectClipboardEnabled: Boolean = true,
 )

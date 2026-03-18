@@ -1,11 +1,9 @@
 package zed.rainxch.core.presentation.model
 
-import zed.rainxch.core.domain.model.GithubRepoSummary
-
-data class DiscoveryRepository(
+data class DiscoveryRepositoryUi(
     val isInstalled: Boolean,
     val isUpdateAvailable: Boolean,
     val isFavourite: Boolean,
     val isStarred: Boolean,
-    val repository: GithubRepoSummary,
+    val repository: GithubRepoSummaryUi,
 )

@@ -17,20 +17,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
-import zed.rainxch.domain.model.SortBy
-import zed.rainxch.domain.model.SortOrder
 import zed.rainxch.githubstore.core.presentation.res.Res
 import zed.rainxch.githubstore.core.presentation.res.close
 import zed.rainxch.githubstore.core.presentation.res.sort_by
+import zed.rainxch.search.presentation.model.SortByUi
+import zed.rainxch.search.presentation.model.SortOrderUi
 import zed.rainxch.search.presentation.utils.label
 
 @Composable
 fun SortByBottomSheet(
-    sortByOptions: List<SortBy>,
-    selectedSortBy: SortBy,
-    selectedSortOrder: SortOrder,
-    onSortBySelected: (SortBy) -> Unit,
-    onSortOrderSelected: (SortOrder) -> Unit,
+    selectedSortBy: SortByUi,
+    selectedSortOrder: SortOrderUi,
+    onSortBySelected: (SortByUi) -> Unit,
+    onSortOrderSelected: (SortOrderUi) -> Unit,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -53,7 +52,7 @@ fun SortByBottomSheet(
                 modifier = modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                sortByOptions.forEach { option ->
+                SortByUi.entries.forEach { option ->
                     val isSelected = option == selectedSortBy
                     TextButton(
                         onClick = {
@@ -78,7 +77,7 @@ fun SortByBottomSheet(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SortOrder.entries.forEach { order ->
+                    SortOrderUi.entries.forEach { order ->
                         FilterChip(
                             selected = order == selectedSortOrder,
                             onClick = { onSortOrderSelected(order) },

@@ -12,6 +12,7 @@
     <string name="cannot_launch">%1$s çalıştırılamadı</string>
     <string name="failed_to_open">%1$s açılamadı</string>
     <string name="failed_to_update">%1$s: %2$s güncellenemedi</string>
+    <string name="update_failed">Güncelleme başarısız</string>
     <string name="update_all_failed">Tümünü güncelleme başarısız: %1$s</string>
     <string name="all_apps_updated_successfully">Tüm uygulamalar başarılı şekilde güncellendi</string>
     <string name="no_updates_available">Güncelleme yok</string>
@@ -577,4 +578,6 @@
     <string name="translation_error_retry">Tekrar dene</string>
     <string name="translated_from">Otomatik algılanan: %1$s</string>
     <string name="select_language">Dil seçin</string>
+    <string name="update_package_mismatch">Paket uyumsuzluğu: APK %1$s, ancak yüklü uygulama %2$s. Güncelleme engellendi.</string>
+    <string name="update_signing_key_mismatch">İmza anahtarı uyumsuzluğu: güncelleme farklı bir geliştirici tarafından imzalanmış. Güncelleme engellendi.</string>
 </resources>

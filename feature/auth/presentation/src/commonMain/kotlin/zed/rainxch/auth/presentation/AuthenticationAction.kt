@@ -1,16 +1,16 @@
 package zed.rainxch.auth.presentation
 
-import zed.rainxch.core.domain.model.GithubDeviceStart
+import zed.rainxch.auth.presentation.model.GithubDeviceStartUi
 
 sealed interface AuthenticationAction {
     data object StartLogin : AuthenticationAction
 
     data class CopyCode(
-        val start: GithubDeviceStart,
+        val start: GithubDeviceStartUi,
     ) : AuthenticationAction
 
     data class OpenGitHub(
-        val start: GithubDeviceStart,
+        val start: GithubDeviceStartUi,
     ) : AuthenticationAction
 
     data object MarkLoggedOut : AuthenticationAction

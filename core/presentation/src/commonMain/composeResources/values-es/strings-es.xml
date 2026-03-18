@@ -8,6 +8,7 @@
     <string name="cannot_launch">No se puede iniciar %1$s</string>
     <string name="failed_to_open">No se pudo abrir %1$s</string>
     <string name="failed_to_update">Error al actualizar %1$s: %2$s</string>
+    <string name="update_failed">Error en la actualización</string>
     <string name="update_all_failed">Error al actualizar todo: %1$s</string>
     <string name="all_apps_updated_successfully">Todas las aplicaciones se actualizaron correctamente</string>
     <string name="no_updates_available">No hay actualizaciones disponibles</string>
@@ -540,4 +541,6 @@
     <string name="translation_error_retry">Reintentar</string>
     <string name="translated_from">Detectado automáticamente: %1$s</string>
     <string name="select_language">Seleccionar idioma</string>
+    <string name="update_package_mismatch">Paquete no coincide: el APK es %1$s, pero la aplicación instalada es %2$s. Actualización bloqueada.</string>
+    <string name="update_signing_key_mismatch">Clave de firma no coincide: la actualización fue firmada por un desarrollador diferente. Actualización bloqueada.</string>
 </resources>

@@ -12,6 +12,7 @@
     <string name="cannot_launch">Impossibile lanciare %1$s</string>
     <string name="failed_to_open">Impossibile aprire %1$s</string>
     <string name="failed_to_update">Impossibile aggiornare %1$s: %2$s</string>
+    <string name="update_failed">Aggiornamento fallito</string>
     <string name="update_all_failed">Aggiornamento generale fallito: %1$s</string>
     <string name="all_apps_updated_successfully">Tutte le app sono state aggiornate con successo</string>
     <string name="no_updates_available">Nessun aggiornamento disponibile</string>
@@ -579,4 +580,6 @@
     <string name="translation_error_retry">Riprova</string>
     <string name="translated_from">Rilevato automaticamente: %1$s</string>
     <string name="select_language">Seleziona lingua</string>
+    <string name="update_package_mismatch">Pacchetto non corrispondente: l\'APK è %1$s, ma l\'app installata è %2$s. Aggiornamento bloccato.</string>
+    <string name="update_signing_key_mismatch">Chiave di firma non corrispondente: l\'aggiornamento è stato firmato da uno sviluppatore diverso. Aggiornamento bloccato.</string>
 </resources>

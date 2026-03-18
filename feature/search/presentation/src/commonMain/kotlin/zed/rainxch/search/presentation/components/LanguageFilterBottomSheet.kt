@@ -20,15 +20,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
-import zed.rainxch.domain.model.ProgrammingLanguage
 import zed.rainxch.githubstore.core.presentation.res.*
+import zed.rainxch.search.presentation.model.ProgrammingLanguageUi
 import zed.rainxch.search.presentation.utils.label
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LanguageFilterBottomSheet(
-    selectedLanguage: ProgrammingLanguage,
-    onLanguageSelected: (ProgrammingLanguage) -> Unit,
+    selectedLanguage: ProgrammingLanguageUi,
+    onLanguageSelected: (ProgrammingLanguageUi) -> Unit,
     onDismissRequest: () -> Unit,
     sheetState: SheetState = rememberModalBottomSheetState(),
 ) {
@@ -59,7 +59,7 @@ fun LanguageFilterBottomSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                items(ProgrammingLanguage.entries.toList()) { language ->
+                items(ProgrammingLanguageUi.entries.toList()) { language ->
                     FilterChip(
                         selected = selectedLanguage == language,
                         onClick = {

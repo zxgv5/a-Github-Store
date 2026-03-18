@@ -18,7 +18,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.getString
 import zed.rainxch.auth.domain.repository.AuthenticationRepository
+import zed.rainxch.auth.presentation.mapper.toUi
 import zed.rainxch.auth.presentation.model.AuthLoginState
+import zed.rainxch.auth.presentation.model.GithubDeviceStartUi
 import zed.rainxch.core.domain.logging.GitHubStoreLogger
 import zed.rainxch.core.domain.model.GithubDeviceStart
 import zed.rainxch.core.domain.utils.BrowserHelper
@@ -149,7 +151,7 @@ class AuthenticationViewModel(
                         it.copy(
                             loginState =
                                 AuthLoginState.DevicePrompt(
-                                    start = start,
+                                    start = start.toUi(),
                                     remainingSeconds = start.expiresInSec,
                                 ),
                             copied = false,
@@ -230,7 +232,7 @@ class AuthenticationViewModel(
         countdownJob?.cancel()
     }
 
-    private fun openGitHub(start: GithubDeviceStart) {
+    private fun openGitHub(start: GithubDeviceStartUi) {
         viewModelScope.launch(Dispatchers.Main.immediate) {
             try {
                 val url = start.verificationUriComplete ?: start.verificationUri
@@ -241,7 +243,7 @@ class AuthenticationViewModel(
         }
     }
 
-    private fun copyCode(start: GithubDeviceStart) {
+    private fun copyCode(start: GithubDeviceStartUi) {
         viewModelScope.launch(Dispatchers.Main.immediate) {
             try {
                 clipboardHelper.copy(

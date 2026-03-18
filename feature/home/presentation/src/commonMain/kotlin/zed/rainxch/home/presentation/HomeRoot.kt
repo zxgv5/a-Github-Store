@@ -73,7 +73,7 @@ fun HomeRoot(
     onNavigateToSettings: () -> Unit,
     onNavigateToSearch: () -> Unit,
     onNavigateToApps: () -> Unit,
-    onNavigateToDetails: (GithubRepoSummary) -> Unit,
+    onNavigateToDetails: (repoId: Long) -> Unit,
     onNavigateToDeveloperProfile: (username: String) -> Unit,
     viewModel: HomeViewModel = koinViewModel(),
 ) {
@@ -116,7 +116,7 @@ fun HomeRoot(
                 }
 
                 is HomeAction.OnRepositoryClick -> {
-                    onNavigateToDetails(action.repo)
+                    onNavigateToDetails(action.repo.id)
                 }
 
                 is HomeAction.OnRepositoryDeveloperClick -> {
@@ -235,7 +235,7 @@ private fun MainState(
                 contentType = { "repo" },
             ) { discoveryRepository ->
                 RepositoryCard(
-                    discoveryRepository = discoveryRepository,
+                    discoveryRepositoryUi = discoveryRepository,
                     onClick = {
                         onAction(HomeAction.OnRepositoryClick(discoveryRepository.repository))
                     },

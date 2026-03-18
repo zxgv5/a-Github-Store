@@ -41,9 +41,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
-import zed.rainxch.core.domain.model.GithubRepoSummary
-import zed.rainxch.core.domain.model.GithubUser
-import zed.rainxch.core.presentation.model.DiscoveryRepository
+import zed.rainxch.core.presentation.model.DiscoveryRepositoryUi
+import zed.rainxch.core.presentation.model.GithubRepoSummaryUi
+import zed.rainxch.core.presentation.model.GithubUserUi
 import zed.rainxch.core.presentation.theme.GithubStoreTheme
 import zed.rainxch.core.presentation.utils.formatReleasedAt
 import zed.rainxch.core.presentation.utils.hasWeekNotPassed
@@ -52,7 +52,7 @@ import zed.rainxch.githubstore.core.presentation.res.*
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun RepositoryCard(
-    discoveryRepository: DiscoveryRepository,
+    discoveryRepositoryUi: DiscoveryRepositoryUi,
     onClick: () -> Unit,
     onShareClick: () -> Unit,
     onDeveloperClick: (String) -> Unit,
@@ -65,7 +65,7 @@ fun RepositoryCard(
         modifier = modifier,
     ) {
         Box {
-            if (discoveryRepository.isFavourite) {
+            if (discoveryRepositoryUi.isFavourite) {
                 Icon(
                     imageVector = Icons.Default.Favorite,
                     contentDescription = null,
@@ -78,7 +78,7 @@ fun RepositoryCard(
                 )
             }
 
-            if (discoveryRepository.isStarred) {
+            if (discoveryRepositoryUi.isStarred) {
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = null,
@@ -104,13 +104,13 @@ fun RepositoryCard(
                     Row(
                         modifier =
                             Modifier.clickable(onClick = {
-                                onDeveloperClick(discoveryRepository.repository.owner.login)
+                                onDeveloperClick(discoveryRepositoryUi.repository.owner.login)
                             }),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         GitHubStoreImage(
-                            imageModel = { discoveryRepository.repository.owner.avatarUrl },
+                            imageModel = { discoveryRepositoryUi.repository.owner.avatarUrl },
                             modifier =
                                 Modifier
                                     .size(32.dp)
@@ -118,7 +118,7 @@ fun RepositoryCard(
                         )
 
                         Text(
-                            text = discoveryRepository.repository.owner.login,
+                            text = discoveryRepositoryUi.repository.owner.login,
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.outline,
                             maxLines = 1,
@@ -128,7 +128,7 @@ fun RepositoryCard(
                     }
 
                     Text(
-                        text = "/ ${discoveryRepository.repository.name}",
+                        text = "/ ${discoveryRepositoryUi.repository.name}",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.outline,
                         softWrap = false,
@@ -145,7 +145,7 @@ fun RepositoryCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = discoveryRepository.repository.name,
+                        text = discoveryRepositoryUi.repository.name,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -155,14 +155,14 @@ fun RepositoryCard(
                         modifier = Modifier.weight(1f, fill = false),
                     )
 
-                    if (discoveryRepository.repository.isFork) {
+                    if (discoveryRepositoryUi.repository.isFork) {
                         ForkBadge()
                     }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                discoveryRepository.repository.description?.let {
+                discoveryRepositoryUi.repository.description?.let {
                     Text(
                         text = it,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -181,7 +181,7 @@ fun RepositoryCard(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
-                        text = "⭐ ${discoveryRepository.repository.stargazersCount}",
+                        text = "⭐ ${discoveryRepositoryUi.repository.stargazersCount}",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -190,7 +190,7 @@ fun RepositoryCard(
                     )
 
                     Text(
-                        text = "• 🌴 ${discoveryRepository.repository.forksCount}",
+                        text = "• 🌴 ${discoveryRepositoryUi.repository.forksCount}",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -198,7 +198,7 @@ fun RepositoryCard(
                         overflow = TextOverflow.Ellipsis,
                     )
 
-                    discoveryRepository.repository.language?.let {
+                    discoveryRepositoryUi.repository.language?.let {
                         Text(
                             text = "• $it",
                             style = MaterialTheme.typography.titleMedium,
@@ -210,22 +210,22 @@ fun RepositoryCard(
                     }
                 }
 
-                if (discoveryRepository.isInstalled) {
+                if (discoveryRepositoryUi.isInstalled) {
                     Spacer(Modifier.height(12.dp))
 
                     InstallStatusBadge(
-                        isUpdateAvailable = discoveryRepository.isUpdateAvailable,
+                        isUpdateAvailable = discoveryRepositoryUi.isUpdateAvailable,
                     )
                 }
 
-                if (discoveryRepository.repository.availablePlatforms.isNotEmpty()) {
+                if (discoveryRepositoryUi.repository.availablePlatforms.isNotEmpty()) {
                     Spacer(Modifier.height(12.dp))
 
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        discoveryRepository.repository.availablePlatforms.forEach { platform ->
+                        discoveryRepositoryUi.repository.availablePlatforms.forEach { platform ->
                             PlatformChip(platform = platform)
                         }
                     }
@@ -235,11 +235,11 @@ fun RepositoryCard(
 
                 val releasedAtText =
                     buildAnnotatedString {
-                        if (hasWeekNotPassed(discoveryRepository.repository.updatedAt)) {
+                        if (hasWeekNotPassed(discoveryRepositoryUi.repository.updatedAt)) {
                             append("🔥 ")
                         }
 
-                        append(formatReleasedAt(discoveryRepository.repository.updatedAt))
+                        append(formatReleasedAt(discoveryRepositoryUi.repository.updatedAt))
                     }
 
                 Text(
@@ -281,7 +281,7 @@ fun RepositoryCard(
 
                     IconButton(
                         onClick = {
-                            uriHandler.openUri(discoveryRepository.repository.htmlUrl)
+                            uriHandler.openUri(discoveryRepositoryUi.repository.htmlUrl)
                         },
                         colors =
                             IconButtonDefaults.iconButtonColors(
@@ -413,15 +413,15 @@ fun InstallStatusBadge(
 fun RepositoryCardPreview() {
     GithubStoreTheme {
         RepositoryCard(
-            discoveryRepository =
-                DiscoveryRepository(
+            discoveryRepositoryUi =
+                DiscoveryRepositoryUi(
                     repository =
-                        GithubRepoSummary(
+                        GithubRepoSummaryUi(
                             id = 0L,
                             name = "Hello",
                             fullName = "JIFEOJEF",
                             owner =
-                                GithubUser(
+                                GithubUserUi(
                                     id = 0L,
                                     login = "Skydoves",
                                     avatarUrl = "ewfew",

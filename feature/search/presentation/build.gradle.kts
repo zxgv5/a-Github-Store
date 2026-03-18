@@ -16,16 +16,8 @@ kotlin {
 
                 implementation(libs.androidx.compose.ui.tooling.preview)
                 implementation(compose.components.resources)
-            }
-        }
 
-        androidMain {
-            dependencies {
-            }
-        }
-
-        jvmMain {
-            dependencies {
+                implementation(libs.kotlinx.collections.immutable)
             }
         }
     }

@@ -1,17 +1,15 @@
 package zed.rainxch.search.presentation.utils
 
-data class ParsedGithubLink(
-    val owner: String,
-    val repo: String,
-    val fullUrl: String,
-)
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
+import zed.rainxch.search.presentation.model.ParsedGithubLink
 
 private val GITHUB_URL_REGEX =
     Regex(
         """(?<![A-Za-z0-9.-])(?:https?://)?(?:www\.)?github\.com/([a-zA-Z0-9\-_.]+)/([a-zA-Z0-9\-_.]+)""",
     )
 
-fun parseGithubUrls(text: String): List<ParsedGithubLink> =
+fun parseGithubUrls(text: String): ImmutableList<ParsedGithubLink> =
     GITHUB_URL_REGEX
         .findAll(text)
         .map { match ->
@@ -21,7 +19,7 @@ fun parseGithubUrls(text: String): List<ParsedGithubLink> =
                 fullUrl = "https://github.com/${match.groupValues[1]}/${match.groupValues[2].removeSuffix(".git")}",
             )
         }.distinctBy { "${it.owner}/${it.repo}" }
-        .toList()
+        .toImmutableList()
 
 fun isEntirelyGithubUrls(text: String): Boolean {
     val stripped =

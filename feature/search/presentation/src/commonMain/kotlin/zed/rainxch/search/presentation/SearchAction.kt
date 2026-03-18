@@ -1,10 +1,10 @@
 package zed.rainxch.search.presentation
 
-import zed.rainxch.core.domain.model.GithubRepoSummary
-import zed.rainxch.domain.model.ProgrammingLanguage
-import zed.rainxch.domain.model.SearchPlatform
-import zed.rainxch.domain.model.SortBy
-import zed.rainxch.domain.model.SortOrder
+import zed.rainxch.core.presentation.model.GithubRepoSummaryUi
+import zed.rainxch.search.presentation.model.ProgrammingLanguageUi
+import zed.rainxch.search.presentation.model.SearchPlatformUi
+import zed.rainxch.search.presentation.model.SortByUi
+import zed.rainxch.search.presentation.model.SortOrderUi
 
 sealed interface SearchAction {
     data class OnSearchChange(
@@ -12,23 +12,23 @@ sealed interface SearchAction {
     ) : SearchAction
 
     data class OnPlatformTypeSelected(
-        val searchPlatform: SearchPlatform,
+        val searchPlatform: SearchPlatformUi,
     ) : SearchAction
 
     data class OnLanguageSelected(
-        val language: ProgrammingLanguage,
+        val language: ProgrammingLanguageUi,
     ) : SearchAction
 
     data class OnSortBySelected(
-        val sortBy: SortBy,
+        val sortBy: SortByUi,
     ) : SearchAction
 
     data class OnSortOrderSelected(
-        val sortOrder: SortOrder,
+        val sortOrder: SortOrderUi,
     ) : SearchAction
 
     data class OnRepositoryClick(
-        val repository: GithubRepoSummary,
+        val repository: GithubRepoSummaryUi,
     ) : SearchAction
 
     data class OnRepositoryDeveloperClick(
@@ -36,7 +36,7 @@ sealed interface SearchAction {
     ) : SearchAction
 
     data class OnShareClick(
-        val repo: GithubRepoSummary,
+        val repo: GithubRepoSummaryUi,
     ) : SearchAction
 
     data class OpenGithubLink(

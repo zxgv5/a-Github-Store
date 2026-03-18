@@ -71,10 +71,10 @@ fun AppNavigation(navController: NavHostController) {
                         onNavigateToApps = {
                             navController.navigate(GithubStoreGraph.AppsScreen)
                         },
-                        onNavigateToDetails = { repo ->
+                        onNavigateToDetails = { repoId ->
                             navController.navigate(
                                 GithubStoreGraph.DetailsScreen(
-                                    repositoryId = repo.id,
+                                    repositoryId = repoId,
                                 ),
                             )
                         },
@@ -93,10 +93,10 @@ fun AppNavigation(navController: NavHostController) {
                         onNavigateBack = {
                             navController.navigateUp()
                         },
-                        onNavigateToDetails = { repo ->
+                        onNavigateToDetails = { repoId ->
                             navController.navigate(
                                 GithubStoreGraph.DetailsScreen(
-                                    repositoryId = repo.id,
+                                    repositoryId = repoId,
                                 ),
                             )
                         },

@@ -8,6 +8,7 @@
     <string name="cannot_launch">Impossible de lancer %1$s</string>
     <string name="failed_to_open">Impossible d’ouvrir %1$s</string>
     <string name="failed_to_update">Échec de la mise à jour de %1$s : %2$s</string>
+    <string name="update_failed">Échec de la mise à jour</string>
     <string name="update_all_failed">Échec de la mise à jour globale : %1$s</string>
     <string name="all_apps_updated_successfully">Toutes les applications ont été mises à jour</string>
     <string name="no_updates_available">Aucune mise à jour disponible</string>
@@ -541,4 +542,6 @@
     <string name="translation_error_retry">Réessayer</string>
     <string name="translated_from">Détection automatique : %1$s</string>
     <string name="select_language">Sélectionner la langue</string>
+    <string name="update_package_mismatch">Incompatibilité de paquet : l\'APK est %1$s, mais l\'application installée est %2$s. Mise à jour bloquée.</string>
+    <string name="update_signing_key_mismatch">Incompatibilité de clé de signature : la mise à jour a été signée par un développeur différent. Mise à jour bloquée.</string>
 </resources>

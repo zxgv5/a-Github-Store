@@ -1,11 +1,11 @@
 package zed.rainxch.search.presentation.utils
 
 import org.jetbrains.compose.resources.StringResource
-import zed.rainxch.domain.model.ProgrammingLanguage
-import zed.rainxch.domain.model.ProgrammingLanguage.*
 import zed.rainxch.githubstore.core.presentation.res.*
+import zed.rainxch.search.presentation.model.ProgrammingLanguageUi
+import zed.rainxch.search.presentation.model.ProgrammingLanguageUi.*
 
-fun ProgrammingLanguage.label(): StringResource =
+fun ProgrammingLanguageUi.label(): StringResource =
     when (this) {
         All -> Res.string.language_all
         Kotlin -> Res.string.language_kotlin

@@ -33,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,11 +42,27 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import zed.rainxch.auth.presentation.model.AuthLoginState
-import zed.rainxch.core.domain.model.GithubDeviceStart
+import zed.rainxch.auth.presentation.model.GithubDeviceStartUi
 import zed.rainxch.core.presentation.components.GithubStoreButton
 import zed.rainxch.core.presentation.theme.GithubStoreTheme
 import zed.rainxch.core.presentation.utils.ObserveAsEvents
-import zed.rainxch.githubstore.core.presentation.res.*
+import zed.rainxch.githubstore.core.presentation.res.Res
+import zed.rainxch.githubstore.core.presentation.res.app_icon
+import zed.rainxch.githubstore.core.presentation.res.auth_code_expires_in
+import zed.rainxch.githubstore.core.presentation.res.auth_error_with_message
+import zed.rainxch.githubstore.core.presentation.res.continue_as_guest
+import zed.rainxch.githubstore.core.presentation.res.copy_code
+import zed.rainxch.githubstore.core.presentation.res.enter_code_on_github
+import zed.rainxch.githubstore.core.presentation.res.ic_github
+import zed.rainxch.githubstore.core.presentation.res.more_requests
+import zed.rainxch.githubstore.core.presentation.res.more_requests_description
+import zed.rainxch.githubstore.core.presentation.res.open_github
+import zed.rainxch.githubstore.core.presentation.res.redirecting_message
+import zed.rainxch.githubstore.core.presentation.res.sign_in_with_github
+import zed.rainxch.githubstore.core.presentation.res.signed_in
+import zed.rainxch.githubstore.core.presentation.res.try_again
+import zed.rainxch.githubstore.core.presentation.res.unlock_full_experience
+import zed.rainxch.githubstore.core.presentation.res.waiting_for_authorization
 
 @Composable
 fun AuthenticationRoot(
@@ -413,7 +428,7 @@ private fun Preview2() {
                 AuthenticationState(
                     loginState =
                         AuthLoginState.DevicePrompt(
-                            GithubDeviceStart(
+                            GithubDeviceStartUi(
                                 deviceCode = "",
                                 userCode = "2102-UHHUF",
                                 verificationUri = "",

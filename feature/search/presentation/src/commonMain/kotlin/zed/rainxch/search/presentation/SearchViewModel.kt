@@ -2,6 +2,8 @@ package zed.rainxch.search.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -25,9 +27,16 @@ import zed.rainxch.core.domain.repository.ThemesRepository
 import zed.rainxch.core.domain.use_cases.SyncInstalledAppsUseCase
 import zed.rainxch.core.domain.utils.ClipboardHelper
 import zed.rainxch.core.domain.utils.ShareManager
-import zed.rainxch.core.presentation.model.DiscoveryRepository
 import zed.rainxch.domain.repository.SearchRepository
-import zed.rainxch.githubstore.core.presentation.res.*
+import zed.rainxch.githubstore.core.presentation.res.Res
+import zed.rainxch.githubstore.core.presentation.res.failed_to_share_link
+import zed.rainxch.githubstore.core.presentation.res.link_copied_to_clipboard
+import zed.rainxch.githubstore.core.presentation.res.no_github_link_in_clipboard
+import zed.rainxch.githubstore.core.presentation.res.no_repositories_found
+import zed.rainxch.githubstore.core.presentation.res.search_failed
+import zed.rainxch.search.presentation.mappers.toDomain
+import zed.rainxch.core.presentation.utils.toUi
+import zed.rainxch.core.presentation.model.DiscoveryRepositoryUi
 import zed.rainxch.search.presentation.utils.isEntirelyGithubUrls
 import zed.rainxch.search.presentation.utils.parseGithubUrls
 
@@ -96,7 +105,7 @@ class SearchViewModel(
                 _state.update { current ->
                     current.copy(
                         autoDetectClipboardEnabled = enabled,
-                        clipboardLinks = if (enabled) current.clipboardLinks else emptyList(),
+                        clipboardLinks = if (enabled) current.clipboardLinks else persistentListOf(),
                         isClipboardBannerVisible = if (enabled) current.isClipboardBannerVisible else false,
                     )
                 }
@@ -112,7 +121,7 @@ class SearchViewModel(
 
             try {
                 val clipText = clipboardHelper.getText() ?: return@launch
-                val links = parseGithubUrls(clipText)
+                val links = parseGithubUrls(clipText).toImmutableList()
                 if (links.isNotEmpty()) {
                     _state.update {
                         it.copy(
@@ -129,21 +138,24 @@ class SearchViewModel(
 
     private fun observeInstalledApps() {
         viewModelScope.launch {
-            installedAppsRepository.getAllInstalledApps().collect { installedApps ->
-                val installedMap = installedApps.associateBy { it.repoId }
-                _state.update { current ->
-                    current.copy(
-                        repositories =
-                            current.repositories.map { searchRepo ->
-                                val app = installedMap[searchRepo.repository.id]
-                                searchRepo.copy(
-                                    isInstalled = app != null,
-                                    isUpdateAvailable = app?.isUpdateAvailable ?: false,
-                                )
-                            },
-                    )
+            installedAppsRepository
+                .getAllInstalledApps()
+                .collect { installedApps ->
+                    val installedMap = installedApps.associateBy { it.repoId }
+                    _state.update { current ->
+                        current.copy(
+                            repositories =
+                                current.repositories
+                                    .map { searchRepo ->
+                                        val app = installedMap[searchRepo.repository.id]
+                                        searchRepo.copy(
+                                            isInstalled = app != null,
+                                            isUpdateAvailable = app?.isUpdateAvailable ?: false,
+                                        )
+                                    }.toImmutableList(),
+                        )
+                    }
                 }
-            }
         }
     }
 
@@ -154,12 +166,13 @@ class SearchViewModel(
                 _state.update { current ->
                     current.copy(
                         repositories =
-                            current.repositories.map { searchRepo ->
-                                val app = installedMap[searchRepo.repository.id]
-                                searchRepo.copy(
-                                    isFavourite = app != null,
-                                )
-                            },
+                            current.repositories
+                                .map { searchRepo ->
+                                    val app = installedMap[searchRepo.repository.id]
+                                    searchRepo.copy(
+                                        isFavourite = app != null,
+                                    )
+                                }.toImmutableList(),
                     )
                 }
             }
@@ -173,10 +186,11 @@ class SearchViewModel(
                 _state.update { current ->
                     current.copy(
                         repositories =
-                            current.repositories.map { searchRepo ->
-                                val app = installedMap[searchRepo.repository.id]
-                                searchRepo.copy(isStarred = app != null)
-                            },
+                            current.repositories
+                                .map { searchRepo ->
+                                    val app = installedMap[searchRepo.repository.id]
+                                    searchRepo.copy(isStarred = app != null)
+                                }.toImmutableList(),
                     )
                 }
             }
@@ -191,7 +205,7 @@ class SearchViewModel(
                     it.copy(
                         isLoading = false,
                         isLoadingMore = false,
-                        repositories = emptyList(),
+                        repositories = persistentListOf(),
                         errorMessage = null,
                         totalCount = null,
                     )
@@ -212,7 +226,12 @@ class SearchViewModel(
                         isLoading = isInitial,
                         isLoadingMore = !isInitial,
                         errorMessage = null,
-                        repositories = if (isInitial) emptyList() else it.repositories,
+                        repositories =
+                            if (isInitial) {
+                                persistentListOf()
+                            } else {
+                                it.repositories
+                            },
                         totalCount = if (isInitial) null else it.totalCount,
                     )
                 }
@@ -237,10 +256,10 @@ class SearchViewModel(
                     searchRepository
                         .searchRepositories(
                             query = _state.value.query,
-                            searchPlatform = _state.value.selectedSearchPlatform,
-                            language = _state.value.selectedLanguage,
-                            sortBy = _state.value.selectedSortBy,
-                            sortOrder = _state.value.selectedSortOrder,
+                            searchPlatform = _state.value.selectedSearchPlatform.toDomain(),
+                            language = _state.value.selectedLanguage.toDomain(),
+                            sortBy = _state.value.selectedSortBy.toDomain(),
+                            sortOrder = _state.value.selectedSortOrder.toDomain(),
                             page = currentPage,
                         ).collect { paginatedRepos ->
                             currentPage = paginatedRepos.nextPageIndex
@@ -251,17 +270,17 @@ class SearchViewModel(
                                     val favourite = favoritesMap[repo.id]
                                     val starred = starredReposMap[repo.id]
 
-                                    DiscoveryRepository(
+                                    DiscoveryRepositoryUi(
                                         isInstalled = app != null,
                                         isFavourite = favourite != null,
                                         isStarred = starred != null,
                                         isUpdateAvailable = app?.isUpdateAvailable ?: false,
-                                        repository = repo,
+                                        repository = repo.toUi(),
                                     )
                                 }
 
                             _state.update { currentState ->
-                                val mergedMap = LinkedHashMap<Long, DiscoveryRepository>()
+                                val mergedMap = LinkedHashMap<Long, DiscoveryRepositoryUi>()
 
                                 currentState.repositories.forEach { r ->
                                     mergedMap[r.repository.id] = r
@@ -283,7 +302,7 @@ class SearchViewModel(
                                     }
                                 }
 
-                                val allRepos = mergedMap.values.toList()
+                                val allRepos = mergedMap.values.toImmutableList()
 
                                 currentState.copy(
                                     repositories = allRepos,
@@ -368,7 +387,7 @@ class SearchViewModel(
                             isLoading = false,
                             isLoadingMore = false,
                             errorMessage = null,
-                            repositories = emptyList(),
+                            repositories = persistentListOf(),
                             totalCount = null,
                         )
                     }
@@ -378,7 +397,7 @@ class SearchViewModel(
                 if (action.query.isBlank()) {
                     _state.update {
                         it.copy(
-                            repositories = emptyList(),
+                            repositories = persistentListOf(),
                             isLoading = false,
                             isLoadingMore = false,
                             errorMessage = null,
@@ -489,12 +508,12 @@ class SearchViewModel(
                 _state.update {
                     it.copy(
                         query = "",
-                        repositories = emptyList(),
+                        repositories = persistentListOf(),
                         isLoading = false,
                         isLoadingMore = false,
                         errorMessage = null,
                         totalCount = null,
-                        detectedLinks = emptyList(),
+                        detectedLinks = persistentListOf(),
                     )
                 }
             }
@@ -530,7 +549,7 @@ class SearchViewModel(
                                 it.copy(
                                     query = clipText,
                                     detectedLinks = links,
-                                    repositories = emptyList(),
+                                    repositories = persistentListOf(),
                                     totalCount = null,
                                     isLoading = false,
                                     isLoadingMore = false,
