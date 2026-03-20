@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.skydoves.landscapist.coil3.CoilImage
 import org.jetbrains.compose.resources.stringResource
+import zed.rainxch.core.domain.model.DiscoveryPlatform
 import zed.rainxch.core.domain.model.GithubRelease
 import zed.rainxch.core.domain.model.GithubRepoSummary
 import zed.rainxch.core.domain.model.GithubUserProfile
@@ -210,7 +211,11 @@ fun AppHeader(
 
                     if (installedApp != null && installedApp.installedVersion != release?.tagName) {
                         Text(
-                            text = stringResource(Res.string.installed_version, installedApp.installedVersion),
+                            text =
+                                stringResource(
+                                    Res.string.installed_version,
+                                    installedApp.installedVersion,
+                                ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -252,22 +257,17 @@ fun AppHeader(
     }
 }
 
-private fun derivePlatformsFromAssets(release: GithubRelease?): List<String> {
+private fun derivePlatformsFromAssets(release: GithubRelease?): List<DiscoveryPlatform> {
     if (release == null) return emptyList()
     val names = release.assets.map { it.name.lowercase() }
     return buildList {
-        when {
-            names.any { it.endsWith(".apk") } -> add("Android")
-
-            names.any { it.endsWith(".exe") || it.endsWith(".msi") } -> add("Windows")
-
-            names.any { it.endsWith(".dmg") || it.endsWith(".pkg") } -> add("macOS")
-
-            names.any {
-                it.endsWith(".appimage") ||
-                    it.endsWith(".deb") ||
-                    it.endsWith(".rpm")
-            } -> add("Linux")
+        if (names.any { it.endsWith(".apk") }) add(DiscoveryPlatform.Android)
+        if (names.any { it.endsWith(".exe") || it.endsWith(".msi") }) add(DiscoveryPlatform.Windows)
+        if (names.any { it.endsWith(".dmg") || it.endsWith(".pkg") }) add(DiscoveryPlatform.Macos)
+        if (names.any { it.endsWith(".appimage") || it.endsWith(".deb") || it.endsWith(".rpm") }) {
+            add(
+                DiscoveryPlatform.Linux,
+            )
         }
     }
 }

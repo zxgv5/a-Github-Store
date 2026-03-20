@@ -27,6 +27,8 @@ import zed.rainxch.core.domain.repository.ThemesRepository
 import zed.rainxch.core.domain.use_cases.SyncInstalledAppsUseCase
 import zed.rainxch.core.domain.utils.ClipboardHelper
 import zed.rainxch.core.domain.utils.ShareManager
+import zed.rainxch.core.presentation.model.DiscoveryRepositoryUi
+import zed.rainxch.core.presentation.utils.toUi
 import zed.rainxch.domain.repository.SearchRepository
 import zed.rainxch.githubstore.core.presentation.res.Res
 import zed.rainxch.githubstore.core.presentation.res.failed_to_share_link
@@ -35,8 +37,6 @@ import zed.rainxch.githubstore.core.presentation.res.no_github_link_in_clipboard
 import zed.rainxch.githubstore.core.presentation.res.no_repositories_found
 import zed.rainxch.githubstore.core.presentation.res.search_failed
 import zed.rainxch.search.presentation.mappers.toDomain
-import zed.rainxch.core.presentation.utils.toUi
-import zed.rainxch.core.presentation.model.DiscoveryRepositoryUi
 import zed.rainxch.search.presentation.utils.isEntirelyGithubUrls
 import zed.rainxch.search.presentation.utils.parseGithubUrls
 
@@ -256,7 +256,7 @@ class SearchViewModel(
                     searchRepository
                         .searchRepositories(
                             query = _state.value.query,
-                            searchPlatform = _state.value.selectedSearchPlatform.toDomain(),
+                            platform = _state.value.selectedSearchPlatform.toDomain(),
                             language = _state.value.selectedLanguage.toDomain(),
                             sortBy = _state.value.selectedSortBy.toDomain(),
                             sortOrder = _state.value.selectedSortOrder.toDomain(),

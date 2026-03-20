@@ -25,4 +25,5 @@ fun CachedGithubRepoSummary.toGithubRepoSummary(): GithubRepoSummary =
         topics = topics,
         releasesUrl = releasesUrl,
         updatedAt = latestReleaseDate ?: updatedAt,
+        availablePlatforms = availablePlatforms,
     )

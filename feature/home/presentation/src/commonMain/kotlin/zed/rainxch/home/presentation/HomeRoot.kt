@@ -2,6 +2,7 @@ package zed.rainxch.home.presentation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,10 +21,14 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -48,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.fletchmckee.liquid.LiquidState
 import io.github.fletchmckee.liquid.liquefiable
@@ -56,13 +62,15 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import zed.rainxch.core.domain.model.GithubRepoSummary
+import zed.rainxch.core.domain.model.DiscoveryPlatform
 import zed.rainxch.core.presentation.components.GithubStoreButton
 import zed.rainxch.core.presentation.components.RepositoryCard
 import zed.rainxch.core.presentation.locals.LocalBottomNavigationHeight
 import zed.rainxch.core.presentation.locals.LocalBottomNavigationLiquid
 import zed.rainxch.core.presentation.theme.GithubStoreTheme
 import zed.rainxch.core.presentation.utils.ObserveAsEvents
+import zed.rainxch.core.presentation.utils.toIcons
+import zed.rainxch.core.presentation.utils.toLabel
 import zed.rainxch.githubstore.core.presentation.res.*
 import zed.rainxch.home.domain.model.HomeCategory
 import zed.rainxch.home.presentation.components.LiquidGlassCategoryChips
@@ -173,7 +181,16 @@ fun HomeScreen(
     ) {
         Scaffold(
             topBar = {
-                TopAppBar()
+                TopAppBar(
+                    currentPlatform = state.currentPlatform,
+                    onChangePlatform = {
+                        onAction(HomeAction.SwitchFilterPlatform(it))
+                    },
+                    isPlatformPopupVisible = state.isPlatformPopupVisible,
+                    onTogglePlatformPopup = {
+                        onAction(HomeAction.OnTogglePlatformPopup)
+                    },
+                )
             },
             snackbarHost = {
                 SnackbarHost(
@@ -372,7 +389,12 @@ private fun FilterChips(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun TopAppBar() {
+private fun TopAppBar(
+    currentPlatform: DiscoveryPlatform,
+    onChangePlatform: (DiscoveryPlatform) -> Unit,
+    isPlatformPopupVisible: Boolean,
+    onTogglePlatformPopup: () -> Unit,
+) {
     TopAppBar(
         navigationIcon = {
             Image(
@@ -399,8 +421,97 @@ private fun TopAppBar() {
                 overflow = TextOverflow.Ellipsis,
             )
         },
+        actions = {
+            val icons = currentPlatform.toIcons()
+
+            Row(
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .clickable(onClick = onTogglePlatformPopup)
+                        .padding(vertical = 4.dp, horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                icons.forEach { icon ->
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+
+            if (isPlatformPopupVisible) {
+                Box {
+                    PlatformsPopup(
+                        onTogglePlatformPopup = onTogglePlatformPopup,
+                        onChangePlatform = onChangePlatform,
+                        currentPlatform = currentPlatform,
+                    )
+                }
+            }
+        },
         modifier = Modifier.padding(12.dp),
     )
+}
+
+@Composable
+private fun PlatformsPopup(
+    onTogglePlatformPopup: () -> Unit,
+    onChangePlatform: (DiscoveryPlatform) -> Unit,
+    currentPlatform: DiscoveryPlatform,
+) {
+    Popup(
+        onDismissRequest = onTogglePlatformPopup,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .padding(6.dp),
+        ) {
+            DiscoveryPlatform.entries.forEach { platform ->
+                Box(
+                    modifier =
+                        Modifier
+                            .clickable(onClick = {
+                                onChangePlatform(platform)
+                                onTogglePlatformPopup()
+                            })
+                            .padding(horizontal = 32.dp, vertical = 8.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement =
+                            Arrangement.spacedBy(
+                                6.dp,
+                                Alignment.Start,
+                            ),
+                    ) {
+                        if (currentPlatform == platform) {
+                            Icon(
+                                imageVector = Icons.Default.Done,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+
+                        Text(
+                            text = platform.toLabel(),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Preview

@@ -30,6 +30,7 @@ import zed.rainxch.core.data.dto.GithubRepoSearchResponse
 import zed.rainxch.core.data.mappers.toSummary
 import zed.rainxch.core.data.network.executeRequest
 import zed.rainxch.core.domain.logging.GitHubStoreLogger
+import zed.rainxch.core.domain.model.DiscoveryPlatform
 import zed.rainxch.core.domain.model.GithubRepoSummary
 import zed.rainxch.core.domain.model.PaginatedDiscoveryRepositories
 import zed.rainxch.core.domain.model.Platform
@@ -43,23 +44,27 @@ import kotlin.time.ExperimentalTime
 
 class HomeRepositoryImpl(
     private val httpClient: HttpClient,
-    private val platform: Platform,
+    private val devicePlatform: Platform,
     private val cachedDataSource: CachedRepositoriesDataSource,
     private val logger: GitHubStoreLogger,
     private val cacheManager: CacheManager,
 ) : HomeRepository {
     private fun cacheKey(
         category: String,
+        requestedPlatform: DiscoveryPlatform,
         page: Int,
-    ): String = "home:$category:${platform.name}:page$page"
+    ): String = "home:$category:${requestedPlatform.name}:page$page"
 
     @OptIn(ExperimentalTime::class)
-    override fun getTrendingRepositories(page: Int): Flow<PaginatedDiscoveryRepositories> =
+    override fun getTrendingRepositories(
+        platform: DiscoveryPlatform,
+        page: Int,
+    ): Flow<PaginatedDiscoveryRepositories> =
         flow {
             if (page == 1) {
                 logger.debug("Attempting to load cached trending repositories...")
 
-                val cachedData = cachedDataSource.getCachedTrendingRepos()
+                val cachedData = cachedDataSource.getCachedTrendingRepos(platform)
 
                 if (cachedData != null && cachedData.repositories.isNotEmpty()) {
                     logger.debug("Using mirror cached data: ${cachedData.repositories.size} repos")
@@ -72,7 +77,16 @@ class HomeRepositoryImpl(
                             hasMore = false,
                             nextPageIndex = 2,
                         )
-                    cacheManager.put(cacheKey("trending", page), result, CacheManager.CacheTtl.HOME_REPOS)
+                    cacheManager.put(
+                        key =
+                            cacheKey(
+                                category = "trending",
+                                requestedPlatform = platform,
+                                page = page,
+                            ),
+                        value = result,
+                        ttlMillis = HOME_REPOS,
+                    )
                     emit(result)
                     return@flow
                 } else {
@@ -80,7 +94,14 @@ class HomeRepositoryImpl(
                 }
             }
 
-            val localCached = cacheManager.get<PaginatedDiscoveryRepositories>(cacheKey("trending", page))
+            val localCached =
+                cacheManager.get<PaginatedDiscoveryRepositories>(
+                    cacheKey(
+                        category = "trending",
+                        requestedPlatform = platform,
+                        page = page,
+                    ),
+                )
             if (localCached != null && localCached.repos.isNotEmpty()) {
                 logger.debug("Using locally cached trending repos: ${localCached.repos.size}")
                 emit(localCached)
@@ -96,6 +117,7 @@ class HomeRepositoryImpl(
 
             emitAll(
                 searchReposWithInstallersFlow(
+                    platform = platform,
                     baseQuery = "stars:>50 archived:false pushed:>=$thirtyDaysAgo",
                     sort = "stars",
                     order = "desc",
@@ -106,12 +128,15 @@ class HomeRepositoryImpl(
         }.flowOn(Dispatchers.IO)
 
     @OptIn(ExperimentalTime::class)
-    override fun getHotReleaseRepositories(page: Int): Flow<PaginatedDiscoveryRepositories> =
+    override fun getHotReleaseRepositories(
+        platform: DiscoveryPlatform,
+        page: Int,
+    ): Flow<PaginatedDiscoveryRepositories> =
         flow {
             if (page == 1) {
                 logger.debug("Attempting to load cached hot release repositories...")
 
-                val cachedData = cachedDataSource.getCachedHotReleaseRepos()
+                val cachedData = cachedDataSource.getCachedHotReleaseRepos(platform)
 
                 if (cachedData != null && cachedData.repositories.isNotEmpty()) {
                     logger.debug("Using mirror cached data: ${cachedData.repositories.size} repos")
@@ -124,7 +149,16 @@ class HomeRepositoryImpl(
                             hasMore = false,
                             nextPageIndex = 2,
                         )
-                    cacheManager.put(cacheKey("hot_release", page), result, CacheManager.HOME_REPOS)
+                    cacheManager.put(
+                        key =
+                            cacheKey(
+                                category = "hot_release",
+                                requestedPlatform = platform,
+                                page = page,
+                            ),
+                        value = result,
+                        ttlMillis = HOME_REPOS,
+                    )
                     emit(result)
                     return@flow
                 } else {
@@ -132,7 +166,14 @@ class HomeRepositoryImpl(
                 }
             }
 
-            val localCached = cacheManager.get<PaginatedDiscoveryRepositories>(cacheKey("hot_release", page))
+            val localCached =
+                cacheManager.get<PaginatedDiscoveryRepositories>(
+                    cacheKey(
+                        category = "hot_release",
+                        requestedPlatform = platform,
+                        page = page,
+                    ),
+                )
             if (localCached != null && localCached.repos.isNotEmpty()) {
                 logger.debug("Using locally cached hot release repos: ${localCached.repos.size}")
                 emit(localCached)
@@ -148,6 +189,7 @@ class HomeRepositoryImpl(
 
             emitAll(
                 searchReposWithInstallersFlow(
+                    platform = platform,
                     baseQuery = "stars:>10 archived:false pushed:>=$fourteenDaysAgo",
                     sort = "updated",
                     order = "desc",
@@ -158,12 +200,15 @@ class HomeRepositoryImpl(
         }.flowOn(Dispatchers.IO)
 
     @OptIn(ExperimentalTime::class)
-    override fun getMostPopular(page: Int): Flow<PaginatedDiscoveryRepositories> =
+    override fun getMostPopular(
+        platform: DiscoveryPlatform,
+        page: Int,
+    ): Flow<PaginatedDiscoveryRepositories> =
         flow {
             if (page == 1) {
                 logger.debug("Attempting to load cached most popular repositories...")
 
-                val cachedData = cachedDataSource.getCachedMostPopularRepos()
+                val cachedData = cachedDataSource.getCachedMostPopularRepos(platform)
 
                 if (cachedData != null && cachedData.repositories.isNotEmpty()) {
                     logger.debug("Using mirror cached data: ${cachedData.repositories.size} repos")
@@ -176,7 +221,7 @@ class HomeRepositoryImpl(
                             hasMore = false,
                             nextPageIndex = 2,
                         )
-                    cacheManager.put(cacheKey("most_popular", page), result, HOME_REPOS)
+                    cacheManager.put(cacheKey("most_popular", platform, page), result, HOME_REPOS)
                     emit(result)
                     return@flow
                 } else {
@@ -184,7 +229,14 @@ class HomeRepositoryImpl(
                 }
             }
 
-            val localCached = cacheManager.get<PaginatedDiscoveryRepositories>(cacheKey("most_popular", page))
+            val localCached =
+                cacheManager.get<PaginatedDiscoveryRepositories>(
+                    cacheKey(
+                        category = "most_popular",
+                        requestedPlatform = platform,
+                        page = page,
+                    ),
+                )
             if (localCached != null && localCached.repos.isNotEmpty()) {
                 logger.debug("Using locally cached most popular repos: ${localCached.repos.size}")
                 emit(localCached)
@@ -207,6 +259,7 @@ class HomeRepositoryImpl(
 
             emitAll(
                 searchReposWithInstallersFlow(
+                    platform = platform,
                     baseQuery = "stars:>1000 archived:false created:<$sixMonthsAgo pushed:>=$oneYearAgo",
                     sort = "stars",
                     order = "desc",
@@ -217,6 +270,7 @@ class HomeRepositoryImpl(
         }.flowOn(Dispatchers.IO)
 
     private fun searchReposWithInstallersFlow(
+        platform: DiscoveryPlatform,
         baseQuery: String,
         sort: String,
         order: String,
@@ -233,7 +287,7 @@ class HomeRepositoryImpl(
             var pagesFetchedCount = 0
             var lastEmittedCount = 0
 
-            val query = buildSimplifiedQuery(baseQuery)
+            val query = buildSimplifiedQuery(baseQuery, platform)
             logger.debug("Query: $query | Sort: $sort | Page: $startPage")
 
             while (results.size < desiredCount && pagesFetchedCount < maxPagesToFetch) {
@@ -336,7 +390,8 @@ class HomeRepositoryImpl(
 
             if (results.size > lastEmittedCount) {
                 val finalBatch = results.subList(lastEmittedCount, results.size)
-                val finalHasMore = pagesFetchedCount < maxPagesToFetch && results.size >= desiredCount
+                val finalHasMore =
+                    pagesFetchedCount < maxPagesToFetch && results.size >= desiredCount
                 val finalResult =
                     PaginatedDiscoveryRepositories(
                         repos = finalBatch.toList(),
@@ -363,21 +418,34 @@ class HomeRepositoryImpl(
                         hasMore = pagesFetchedCount < maxPagesToFetch && results.size >= desiredCount,
                         nextPageIndex = currentApiPage + 1,
                     )
-                cacheManager.put(cacheKey(category, startPage), allResults, HOME_REPOS)
+                cacheManager.put(
+                    key =
+                        cacheKey(
+                            category = category,
+                            requestedPlatform = platform,
+                            page = startPage,
+                        ),
+                    value = allResults,
+                    ttlMillis = HOME_REPOS,
+                )
                 logger.debug("Cached ${results.size} repos for $category page $startPage")
             }
         }.flowOn(Dispatchers.IO)
 
-    private fun buildSimplifiedQuery(baseQuery: String): String {
+    private fun buildSimplifiedQuery(
+        baseQuery: String,
+        requestedPlatform: DiscoveryPlatform,
+    ): String {
         val topic =
-            when (platform) {
-                Platform.ANDROID -> "android"
-                Platform.WINDOWS -> "desktop"
-                Platform.MACOS -> "macos"
-                Platform.LINUX -> "linux"
+            when (requestedPlatform) {
+                DiscoveryPlatform.All -> null
+                DiscoveryPlatform.Android -> "android"
+                DiscoveryPlatform.Windows -> "desktop"
+                DiscoveryPlatform.Macos -> "macos"
+                DiscoveryPlatform.Linux -> "linux"
             }
 
-        return "$baseQuery topic:$topic"
+        return if (topic == null) baseQuery else "$baseQuery topic:$topic"
     }
 
     private fun calculatePlatformScore(repo: GithubRepoNetworkModel): Int {
@@ -386,7 +454,7 @@ class HomeRepositoryImpl(
         val language = repo.language?.lowercase()
         val desc = repo.description?.lowercase() ?: ""
 
-        when (platform) {
+        when (devicePlatform) {
             Platform.ANDROID -> {
                 if (topics.contains("android")) score += 10
                 if (topics.contains("mobile")) score += 5
@@ -440,7 +508,7 @@ class HomeRepositoryImpl(
             val relevantAssets =
                 stableRelease.assets.filter { asset ->
                     val name = asset.name.lowercase()
-                    when (platform) {
+                    when (devicePlatform) {
                         Platform.ANDROID -> {
                             name.endsWith(".apk")
                         }

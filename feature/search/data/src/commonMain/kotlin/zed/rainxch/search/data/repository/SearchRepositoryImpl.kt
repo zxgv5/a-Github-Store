@@ -24,11 +24,11 @@ import zed.rainxch.core.data.dto.GithubRepoNetworkModel
 import zed.rainxch.core.data.dto.GithubRepoSearchResponse
 import zed.rainxch.core.data.mappers.toSummary
 import zed.rainxch.core.data.network.executeRequest
+import zed.rainxch.core.domain.model.DiscoveryPlatform
 import zed.rainxch.core.domain.model.GithubRepoSummary
 import zed.rainxch.core.domain.model.PaginatedDiscoveryRepositories
 import zed.rainxch.core.domain.model.RateLimitException
 import zed.rainxch.domain.model.ProgrammingLanguage
-import zed.rainxch.domain.model.SearchPlatform
 import zed.rainxch.domain.model.SortBy
 import zed.rainxch.domain.model.SortOrder
 import zed.rainxch.domain.repository.SearchRepository
@@ -51,7 +51,7 @@ class SearchRepositoryImpl(
 
     private fun searchCacheKey(
         query: String,
-        platform: SearchPlatform,
+        platform: DiscoveryPlatform,
         language: ProgrammingLanguage,
         sortBy: SortBy,
         sortOrder: SortOrder,
@@ -69,14 +69,14 @@ class SearchRepositoryImpl(
 
     override fun searchRepositories(
         query: String,
-        searchPlatform: SearchPlatform,
+        platform: DiscoveryPlatform,
         language: ProgrammingLanguage,
         sortBy: SortBy,
         sortOrder: SortOrder,
         page: Int,
     ): Flow<PaginatedDiscoveryRepositories> =
         channelFlow {
-            val cacheKey = searchCacheKey(query, searchPlatform, language, sortBy, sortOrder, page)
+            val cacheKey = searchCacheKey(query, platform, language, sortBy, sortOrder, page)
 
             val cached = cacheManager.get<PaginatedDiscoveryRepositories>(cacheKey)
             if (cached != null) {
@@ -110,7 +110,8 @@ class SearchRepositoryImpl(
                             }.getOrThrow()
 
                     val total = response.totalCount
-                    val baseHasMore = (currentPage * PER_PAGE) < total && response.items.isNotEmpty()
+                    val baseHasMore =
+                        (currentPage * PER_PAGE) < total && response.items.isNotEmpty()
 
                     if (response.items.isEmpty()) {
                         send(
@@ -124,7 +125,7 @@ class SearchRepositoryImpl(
                         return@channelFlow
                     }
 
-                    val verified = verifyBatch(response.items, searchPlatform)
+                    val verified = verifyBatch(response.items, platform)
 
                     if (verified.isNotEmpty()) {
                         val result =
@@ -172,7 +173,7 @@ class SearchRepositoryImpl(
 
     private suspend fun verifyBatch(
         items: List<GithubRepoNetworkModel>,
-        searchPlatform: SearchPlatform,
+        searchPlatform: DiscoveryPlatform,
     ): List<GithubRepoSummary> {
         val semaphore = Semaphore(VERIFY_CONCURRENCY)
 
@@ -235,55 +236,49 @@ class SearchRepositoryImpl(
 
     private fun assetMatchesPlatform(
         nameRaw: String,
-        platform: SearchPlatform,
+        platform: DiscoveryPlatform,
     ): Boolean {
         val name = nameRaw.lowercase()
         return when (platform) {
-            SearchPlatform.All -> {
+            DiscoveryPlatform.All -> {
                 name.endsWith(".apk") ||
                     name.endsWith(".msi") || name.endsWith(".exe") ||
                     name.endsWith(".dmg") || name.endsWith(".pkg") ||
                     name.endsWith(".appimage") || name.endsWith(".deb") || name.endsWith(".rpm")
             }
 
-            SearchPlatform.Android -> {
+            DiscoveryPlatform.Android -> {
                 name.endsWith(".apk")
             }
 
-            SearchPlatform.Windows -> {
+            DiscoveryPlatform.Windows -> {
                 name.endsWith(".exe") || name.endsWith(".msi")
             }
 
-            SearchPlatform.Macos -> {
+            DiscoveryPlatform.Macos -> {
                 name.endsWith(".dmg") || name.endsWith(".pkg")
             }
 
-            SearchPlatform.Linux -> {
+            DiscoveryPlatform.Linux -> {
                 name.endsWith(".appimage") || name.endsWith(".deb") || name.endsWith(".rpm")
             }
         }
     }
 
-    private fun detectAvailablePlatforms(assetNames: List<String>): List<String> {
-        val platforms = mutableListOf<String>()
-        val allPlatforms =
-            listOf(
-                SearchPlatform.Android to "Android",
-                SearchPlatform.Windows to "Windows",
-                SearchPlatform.Macos to "macOS",
-                SearchPlatform.Linux to "Linux",
-            )
-        for ((platform, label) in allPlatforms) {
-            if (assetNames.any { assetMatchesPlatform(it, platform) }) {
-                platforms.add(label)
-            }
+    private fun detectAvailablePlatforms(assetNames: List<String>): List<DiscoveryPlatform> =
+        buildList {
+            DiscoveryPlatform.entries
+                .filter { it != DiscoveryPlatform.All }
+                .forEach { platform ->
+                    if (assetNames.any { assetMatchesPlatform(it, platform) }) {
+                        add(platform)
+                    }
+                }
         }
-        return platforms
-    }
 
     private suspend fun checkRepoHasInstallers(
         repo: GithubRepoNetworkModel,
-        targetPlatform: SearchPlatform,
+        targetPlatform: DiscoveryPlatform,
     ): GithubRepoSummary? {
         return try {
             val allReleases =
@@ -327,7 +322,7 @@ class SearchRepositoryImpl(
 
     private suspend fun checkRepoHasInstallersCached(
         repo: GithubRepoNetworkModel,
-        targetPlatform: SearchPlatform,
+        targetPlatform: DiscoveryPlatform,
     ): GithubRepoSummary? {
         val key = "${repo.owner.login}/${repo.name}:LATEST_PLATFORM_${targetPlatform.name}"
         val cached =

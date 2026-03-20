@@ -41,13 +41,21 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
+import zed.rainxch.core.domain.model.DiscoveryPlatform
 import zed.rainxch.core.presentation.model.DiscoveryRepositoryUi
 import zed.rainxch.core.presentation.model.GithubRepoSummaryUi
 import zed.rainxch.core.presentation.model.GithubUserUi
 import zed.rainxch.core.presentation.theme.GithubStoreTheme
 import zed.rainxch.core.presentation.utils.formatReleasedAt
 import zed.rainxch.core.presentation.utils.hasWeekNotPassed
-import zed.rainxch.githubstore.core.presentation.res.*
+import zed.rainxch.core.presentation.utils.toIcons
+import zed.rainxch.githubstore.core.presentation.res.Res
+import zed.rainxch.githubstore.core.presentation.res.forked_repository
+import zed.rainxch.githubstore.core.presentation.res.home_view_details
+import zed.rainxch.githubstore.core.presentation.res.installed
+import zed.rainxch.githubstore.core.presentation.res.open_in_browser
+import zed.rainxch.githubstore.core.presentation.res.share_repository
+import zed.rainxch.githubstore.core.presentation.res.update_available
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -103,9 +111,12 @@ fun RepositoryCard(
                 ) {
                     Row(
                         modifier =
-                            Modifier.clickable(onClick = {
-                                onDeveloperClick(discoveryRepositoryUi.repository.owner.login)
-                            }),
+                            Modifier
+                                .clip(CircleShape)
+                                .clickable(onClick = {
+                                    onDeveloperClick(discoveryRepositoryUi.repository.owner.login)
+                                })
+                                .padding(horizontal = 4.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
@@ -113,7 +124,7 @@ fun RepositoryCard(
                             imageModel = { discoveryRepositoryUi.repository.owner.avatarUrl },
                             modifier =
                                 Modifier
-                                    .size(32.dp)
+                                    .size(40.dp)
                                     .clip(CircleShape),
                         )
 
@@ -128,7 +139,7 @@ fun RepositoryCard(
                     }
 
                     Text(
-                        text = "/ ${discoveryRepositoryUi.repository.name}",
+                        text = "/",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.outline,
                         softWrap = false,
@@ -173,7 +184,7 @@ fun RepositoryCard(
                     )
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(8.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -231,7 +242,7 @@ fun RepositoryCard(
                     }
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
 
                 val releasedAtText =
                     buildAnnotatedString {
@@ -251,7 +262,7 @@ fun RepositoryCard(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(12.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -303,21 +314,36 @@ fun RepositoryCard(
 
 @Composable
 fun PlatformChip(
-    platform: String,
+    platform: DiscoveryPlatform,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
     ) {
-        Text(
-            text = platform,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-        )
+        FlowRow(
+            modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+        ) {
+            platform.toIcons().forEach { icon ->
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            Text(
+                text = platform.name,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            )
+        }
     }
 }
 

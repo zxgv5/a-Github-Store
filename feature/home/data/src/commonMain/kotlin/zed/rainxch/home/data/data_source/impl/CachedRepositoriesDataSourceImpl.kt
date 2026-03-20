@@ -7,24 +7,28 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import zed.rainxch.core.domain.logging.GitHubStoreLogger
-import zed.rainxch.core.domain.model.Platform
+import zed.rainxch.core.domain.model.DiscoveryPlatform
 import zed.rainxch.home.data.data_source.CachedRepositoriesDataSource
+import zed.rainxch.home.data.dto.CachedGithubRepoSummary
 import zed.rainxch.home.data.dto.CachedRepoResponse
 import zed.rainxch.home.domain.model.HomeCategory
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 @OptIn(ExperimentalTime::class)
 class CachedRepositoriesDataSourceImpl(
-    private val platform: Platform,
     private val logger: GitHubStoreLogger,
 ) : CachedRepositoriesDataSource {
     private val json =
@@ -44,88 +48,186 @@ class CachedRepositoriesDataSourceImpl(
         }
 
     private val cacheMutex = Mutex()
-    private val memoryCache = mutableMapOf<HomeCategory, CacheEntry>()
+    private val memoryCache = mutableMapOf<CacheKey, CacheEntry>()
 
     private data class CacheEntry(
         val data: CachedRepoResponse,
         val fetchedAt: Instant,
     )
 
-    override suspend fun getCachedTrendingRepos(): CachedRepoResponse? = fetchCachedReposForCategory(HomeCategory.TRENDING)
+    override suspend fun getCachedTrendingRepos(platform: DiscoveryPlatform): CachedRepoResponse? =
+        fetchCachedReposForCategory(platform, HomeCategory.TRENDING)
 
-    override suspend fun getCachedHotReleaseRepos(): CachedRepoResponse? = fetchCachedReposForCategory(HomeCategory.HOT_RELEASE)
+    override suspend fun getCachedHotReleaseRepos(platform: DiscoveryPlatform): CachedRepoResponse? =
+        fetchCachedReposForCategory(platform, HomeCategory.HOT_RELEASE)
 
-    override suspend fun getCachedMostPopularRepos(): CachedRepoResponse? = fetchCachedReposForCategory(HomeCategory.MOST_POPULAR)
+    override suspend fun getCachedMostPopularRepos(platform: DiscoveryPlatform): CachedRepoResponse? =
+        fetchCachedReposForCategory(platform, HomeCategory.MOST_POPULAR)
 
-    private suspend fun fetchCachedReposForCategory(category: HomeCategory): CachedRepoResponse? {
-        val cached = cacheMutex.withLock { memoryCache[category] }
+    private suspend fun fetchCachedReposForCategory(
+        platform: DiscoveryPlatform,
+        category: HomeCategory,
+    ): CachedRepoResponse? {
+        val cacheKey = CacheKey(platform, category)
+
+        val cached = cacheMutex.withLock { memoryCache[cacheKey] }
         if (cached != null) {
             val age = Clock.System.now() - cached.fetchedAt
             if (age < CACHE_TTL) {
-                logger.debug("Memory cache hit for $category (age: ${age.inWholeSeconds}s)")
+                logger.debug("Memory cache hit for $cacheKey (age: ${age.inWholeSeconds}s)")
                 return cached.data
             } else {
-                logger.debug("Memory cache expired for $category (age: ${age.inWholeSeconds}s)")
+                logger.debug("Memory cache expired for $cacheKey (age: ${age.inWholeSeconds}s)")
             }
         }
 
         return withContext(Dispatchers.IO) {
-            val platformName =
-                when (platform) {
-                    Platform.ANDROID -> "android"
-                    Platform.WINDOWS -> "windows"
-                    Platform.MACOS -> "macos"
-                    Platform.LINUX -> "linux"
-                }
-
-            val path =
+            val paths =
                 when (category) {
-                    HomeCategory.TRENDING -> "cached-data/trending/$platformName.json"
-                    HomeCategory.HOT_RELEASE -> "cached-data/new-releases/$platformName.json"
-                    HomeCategory.MOST_POPULAR -> "cached-data/most-popular/$platformName.json"
+                    HomeCategory.TRENDING -> {
+                        listOf(
+                            "cached-data/trending/android.json",
+                            "cached-data/trending/windows.json",
+                            "cached-data/trending/macos.json",
+                            "cached-data/trending/linux.json",
+                        )
+                    }
+
+                    HomeCategory.HOT_RELEASE -> {
+                        listOf(
+                            "cached-data/new-releases/android.json",
+                            "cached-data/new-releases/windows.json",
+                            "cached-data/new-releases/macos.json",
+                            "cached-data/new-releases/linux.json",
+                        )
+                    }
+
+                    HomeCategory.MOST_POPULAR -> {
+                        listOf(
+                            "cached-data/most-popular/android.json",
+                            "cached-data/most-popular/windows.json",
+                            "cached-data/most-popular/macos.json",
+                            "cached-data/most-popular/linux.json",
+                        )
+                    }
                 }
 
-            val mirrorUrls =
-                listOf(
-                    "https://raw.githubusercontent.com/OpenHub-Store/api/main/$path",
-                    "https://cdn.jsdelivr.net/gh/OpenHub-Store/api@main/$path",
-                    "https://cdn.statically.io/gh/OpenHub-Store/api/main/$path",
+            val responses =
+                coroutineScope {
+                    paths
+                        .map { path ->
+                            async {
+                                val url = "https://raw.githubusercontent.com/OpenHub-Store/api/main/$path"
+                                val filePlatform =
+                                    when {
+                                        path.contains("/android") -> DiscoveryPlatform.Android
+                                        path.contains("/windows") -> DiscoveryPlatform.Windows
+                                        path.contains("/macos") -> DiscoveryPlatform.Macos
+                                        path.contains("/linux") -> DiscoveryPlatform.Linux
+                                        else -> error("Unknown platform in path: $path")
+                                    }
+                                try {
+                                    logger.debug("Fetching from: $url")
+                                    val response: HttpResponse = httpClient.get(url)
+                                    if (response.status.isSuccess()) {
+                                        json
+                                            .decodeFromString<CachedRepoResponse>(response.bodyAsText())
+                                            .let { repoResponse ->
+                                                repoResponse.copy(
+                                                    repositories =
+                                                        repoResponse.repositories.map {
+                                                            it.copy(availablePlatforms = listOf(filePlatform))
+                                                        },
+                                                )
+                                            }
+                                    } else {
+                                        logger.error("HTTP ${response.status.value} from $url")
+                                        null
+                                    }
+                                } catch (e: SerializationException) {
+                                    logger.error("Parse error from $url: ${e.message}")
+                                    null
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    logger.error("Error with $url: ${e.message}")
+                                    null
+                                }
+                            }
+                        }.awaitAll()
+                        .filterNotNull()
+                }
+
+            if (responses.isEmpty()) {
+                logger.error("All mirrors failed for $cacheKey")
+                return@withContext null
+            }
+
+            val allMergedRepos =
+                responses
+                    .asSequence()
+                    .flatMap { it.repositories.asSequence() }
+                    .groupBy { it.id }
+                    .values
+                    .map { duplicates ->
+                        duplicates.reduce { acc, repo ->
+                            acc.copy(
+                                availablePlatforms = (acc.availablePlatforms + repo.availablePlatforms).distinct(),
+                                trendingScore =
+                                    listOfNotNull(
+                                        acc.trendingScore,
+                                        repo.trendingScore,
+                                    ).maxOrNull(),
+                                popularityScore =
+                                    listOfNotNull(
+                                        acc.popularityScore,
+                                        repo.popularityScore,
+                                    ).maxOrNull(),
+                                latestReleaseDate =
+                                    listOfNotNull(
+                                        acc.latestReleaseDate,
+                                        repo.latestReleaseDate,
+                                    ).maxOrNull(),
+                            )
+                        }
+                    }.sortedWith(
+                        compareByDescending<CachedGithubRepoSummary> { it.trendingScore }
+                            .thenByDescending { it.popularityScore }
+                            .thenByDescending { it.latestReleaseDate },
+                    )
+
+            val filteredRepos =
+                when (platform) {
+                    DiscoveryPlatform.All -> allMergedRepos
+                    else -> allMergedRepos.filter { platform in it.availablePlatforms }
+                }.toList()
+
+            val merged =
+                CachedRepoResponse(
+                    category = responses.first().category,
+                    platform = platform.name.lowercase(),
+                    lastUpdated = responses.maxOf { it.lastUpdated },
+                    totalCount = filteredRepos.size,
+                    repositories = filteredRepos,
                 )
 
-            for (url in mirrorUrls) {
-                try {
-                    logger.debug("Fetching from: $url")
-                    val response: HttpResponse = httpClient.get(url)
-
-                    if (response.status.isSuccess()) {
-                        val responseText = response.bodyAsText()
-                        val parsed = json.decodeFromString<CachedRepoResponse>(responseText)
-
-                        cacheMutex.withLock {
-                            memoryCache[category] =
-                                CacheEntry(
-                                    data = parsed,
-                                    fetchedAt = Clock.System.now(),
-                                )
-                        }
-
-                        return@withContext parsed
-                    } else {
-                        logger.error("HTTP ${response.status.value} from $url")
-                    }
-                } catch (e: SerializationException) {
-                    logger.error("Parse error from $url: ${e.message}")
-                } catch (e: Exception) {
-                    logger.error("Error with $url: ${e.message}")
+            if (responses.size == paths.size) {
+                cacheMutex.withLock {
+                    memoryCache[cacheKey] =
+                        CacheEntry(data = merged, fetchedAt = Clock.System.now())
                 }
             }
 
-            logger.error("All mirrors failed for $category")
-            null
+            merged
         }
     }
 
     private companion object {
-        private val CACHE_TTL = 5.minutes
+        private val CACHE_TTL = 1.hours
     }
+
+    private data class CacheKey(
+        val platform: DiscoveryPlatform,
+        val category: HomeCategory,
+    )
 }

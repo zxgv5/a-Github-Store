@@ -2,6 +2,7 @@ package zed.rainxch.core.presentation.model
 
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import zed.rainxch.core.domain.model.DiscoveryPlatform
 
 data class GithubRepoSummaryUi(
     val id: Long,
@@ -18,5 +19,5 @@ data class GithubRepoSummaryUi(
     val releasesUrl: String,
     val updatedAt: String,
     val isFork: Boolean = false,
-    val availablePlatforms: ImmutableList<String> = persistentListOf(),
+    val availablePlatforms: ImmutableList<DiscoveryPlatform> = persistentListOf(),
 )

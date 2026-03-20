@@ -1,5 +1,6 @@
 package zed.rainxch.home.presentation
 
+import zed.rainxch.core.domain.model.DiscoveryPlatform
 import zed.rainxch.core.presentation.model.GithubRepoSummaryUi
 import zed.rainxch.home.domain.model.HomeCategory
 
@@ -16,12 +17,18 @@ sealed interface HomeAction {
 
     data object OnAppsClick : HomeAction
 
+    data object OnTogglePlatformPopup : HomeAction
+
     data class OnShareClick(
         val repo: GithubRepoSummaryUi,
     ) : HomeAction
 
     data class SwitchCategory(
         val category: HomeCategory,
+    ) : HomeAction
+
+    data class SwitchFilterPlatform(
+        val platform: DiscoveryPlatform,
     ) : HomeAction
 
     data class OnRepositoryClick(
