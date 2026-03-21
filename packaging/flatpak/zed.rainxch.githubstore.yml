@@ -9,15 +9,14 @@ command: githubstore
 finish-args:
   # Network access for GitHub API calls and downloading releases
   - --share=network
-  # Display support (X11 via XWayland on Wayland desktops)
-  - --share=ipc
+  # Display support — X11 required (Compose/Skiko doesn't support native Wayland yet)
+  # On Wayland desktops this uses XWayland, available on all major distros
   - --socket=x11
-  - --socket=fallback-x11
+  - --share=ipc
   # GPU acceleration for Compose rendering
   - --device=dri
   # Download directory access for APK/release downloads
   - --filesystem=xdg-download:rw
-  - --socket=wayland
 
 modules:
   # Module 1: Bundle JetBrains Runtime (JBR) 21 for optimal Compose Desktop rendering
@@ -77,8 +76,12 @@ modules:
       - install -Dm644 composeApp/src/jvmMain/resources/logo/app_icon.png
           /app/share/icons/hicolor/512x512/apps/zed.rainxch.githubstore.png
     sources:
-      - type: git
-        url: https://github.com/OpenHub-Store/GitHub-Store
-        tag: 1.6.2
-        commit: f6c83ddf49bf750e4c1491fb063c86ad2aee797c
-      # Gradle wrapper will download dependencies via --share=network
+      # For development: use local directory (switch to type: git for releases)
+      - type: dir
+        path: ../../
+      # Gradle distribution (referenced by gradle-wrapper.properties after sed patch)
+      - type: file
+        url: https://services.gradle.org/distributions/gradle-8.14.3-bin.zip
+        sha256: bd71102213493060956ec229d946beee57158dbd89d0e62b91bca0fa2c5f3531
+        dest: gradle/wrapper
+        dest-filename: gradle-bin.zip
