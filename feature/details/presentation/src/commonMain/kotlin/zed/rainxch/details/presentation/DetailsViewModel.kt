@@ -42,12 +42,12 @@ import zed.rainxch.core.domain.utils.ShareManager
 import zed.rainxch.details.domain.model.ReleaseCategory
 import zed.rainxch.details.domain.repository.DetailsRepository
 import zed.rainxch.details.domain.repository.TranslationRepository
-import zed.rainxch.details.domain.system.ApkValidationResult
+import zed.rainxch.details.domain.model.ApkValidationResult
+import zed.rainxch.details.domain.model.FingerprintCheckResult
+import zed.rainxch.details.domain.model.SaveInstalledAppParams
+import zed.rainxch.details.domain.model.UpdateInstalledAppParams
 import zed.rainxch.details.domain.system.AttestationVerifier
-import zed.rainxch.details.domain.system.FingerprintCheckResult
 import zed.rainxch.details.domain.system.InstallationManager
-import zed.rainxch.details.domain.system.SaveInstalledAppParams
-import zed.rainxch.details.domain.system.UpdateInstalledAppParams
 import zed.rainxch.details.domain.util.VersionHelper
 import zed.rainxch.details.presentation.model.AttestationStatus
 import zed.rainxch.details.presentation.model.DowngradeWarning
@@ -863,7 +863,7 @@ class DetailsViewModel(
         viewModelScope.launch {
             try {
                 val ext = warning.pendingAssetName.substringAfterLast('.', "").lowercase()
-                installer.install(warning.pendingFilePath, ext)
+                val installOutcome = installer.install(warning.pendingFilePath, ext)
 
                 if (platform == Platform.ANDROID) {
                     saveInstalledAppToDatabase(
@@ -873,6 +873,7 @@ class DetailsViewModel(
                         releaseTag = warning.pendingReleaseTag,
                         isUpdate = warning.pendingIsUpdate,
                         filePath = warning.pendingFilePath,
+                        installOutcome = installOutcome,
                     )
                 }
 
@@ -1232,6 +1233,7 @@ class DetailsViewModel(
                     assetName = assetName,
                     assetUrl = assetUrl,
                     releaseTag = releaseTag,
+                    isPendingInstall = installOutcome != InstallOutcome.COMPLETED,
                 ),
             )
         } else {

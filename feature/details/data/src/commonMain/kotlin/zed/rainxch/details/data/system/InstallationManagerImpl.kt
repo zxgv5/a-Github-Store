@@ -8,11 +8,11 @@ import zed.rainxch.core.domain.model.InstalledApp
 import zed.rainxch.core.domain.repository.FavouritesRepository
 import zed.rainxch.core.domain.repository.InstalledAppsRepository
 import zed.rainxch.core.domain.system.Installer
-import zed.rainxch.details.domain.system.ApkValidationResult
-import zed.rainxch.details.domain.system.FingerprintCheckResult
+import zed.rainxch.details.domain.model.ApkValidationResult
+import zed.rainxch.details.domain.model.FingerprintCheckResult
+import zed.rainxch.details.domain.model.SaveInstalledAppParams
+import zed.rainxch.details.domain.model.UpdateInstalledAppParams
 import zed.rainxch.details.domain.system.InstallationManager
-import zed.rainxch.details.domain.system.SaveInstalledAppParams
-import zed.rainxch.details.domain.system.UpdateInstalledAppParams
 import kotlin.time.Clock.System
 import kotlin.time.ExperimentalTime
 
@@ -120,8 +120,9 @@ class InstallationManagerImpl(
         }
 
     override suspend fun updateInstalledAppVersion(params: UpdateInstalledAppParams) {
+        val packageName = params.apkInfo.packageName
         installedAppsRepository.updateAppVersion(
-            packageName = params.apkInfo.packageName,
+            packageName = packageName,
             newTag = params.releaseTag,
             newAssetName = params.assetName,
             newAssetUrl = params.assetUrl,
@@ -129,5 +130,6 @@ class InstallationManagerImpl(
             newVersionCode = params.apkInfo.versionCode,
             signingFingerprint = params.apkInfo.signingFingerprint,
         )
+        installedAppsRepository.updatePendingStatus(packageName, params.isPendingInstall)
     }
 }
