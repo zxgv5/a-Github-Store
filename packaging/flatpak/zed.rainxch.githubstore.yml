@@ -49,8 +49,6 @@ modules:
         JAVA_HOME: /usr/lib/sdk/openjdk21
         GRADLE_USER_HOME: /run/build/githubstore/.gradle
     build-commands:
-      # Debug: list what's in the build directory
-      - ls -la && echo "---" && ls -la gradle/wrapper/ || echo "gradle/wrapper/ NOT FOUND" && find . -name "gradle-wrapper.properties" -maxdepth 4 2>/dev/null || true
       # Use local Gradle distribution (no network needed)
       - sed -i 's|distributionUrl=.*|distributionUrl=gradle-bin.zip|' gradle/wrapper/gradle-wrapper.properties
       # Rewrite settings.gradle.kts files to use offline Maven repository
