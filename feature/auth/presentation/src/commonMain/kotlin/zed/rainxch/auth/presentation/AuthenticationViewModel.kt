@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.getString
 import zed.rainxch.auth.domain.repository.AuthenticationRepository
+import zed.rainxch.auth.domain.repository.DevicePollResult
 import zed.rainxch.auth.presentation.mapper.toUi
 import zed.rainxch.auth.presentation.model.AuthLoginState
 import zed.rainxch.auth.presentation.model.GithubDeviceStartUi
@@ -39,6 +40,7 @@ class AuthenticationViewModel(
     private var hasLoadedInitialData = false
     private var countdownJob: Job? = null
     private var pollingJob: Job? = null
+    private var pollingIntervalMs: Long = DEFAULT_POLL_INTERVAL_SEC * 1000L
 
     private val _state: MutableStateFlow<AuthenticationState> =
         MutableStateFlow(AuthenticationState())
@@ -234,22 +236,19 @@ class AuthenticationViewModel(
 
     private fun startPolling(deviceCode: String) {
         pollingJob?.cancel()
-        val intervalMs = getPollingIntervalMs()
-        pollingJob =
-            viewModelScope.launch {
-                while (isActive) {
-                    delay(intervalMs)
-                    doPoll(deviceCode)
-                }
-            }
-    }
-
-    private fun getPollingIntervalMs(): Long {
         val loginState = _state.value.loginState
         val intervalSec =
             (loginState as? AuthLoginState.DevicePrompt)?.start?.intervalSec
                 ?: DEFAULT_POLL_INTERVAL_SEC
-        return (intervalSec * 1000).toLong()
+        // Add 1s buffer above GitHub's minimum to avoid immediate slow_down
+        pollingIntervalMs = (intervalSec * 1000).toLong() + 1000L
+        pollingJob =
+            viewModelScope.launch {
+                while (isActive) {
+                    delay(pollingIntervalMs)
+                    doPoll(deviceCode)
+                }
+            }
     }
 
     private fun pollOnce(deviceCode: String) {
@@ -261,33 +260,48 @@ class AuthenticationViewModel(
     private suspend fun doPoll(deviceCode: String) {
         _state.update { it.copy(isPolling = true) }
         try {
-            logger.debug("Polling device token (code=${deviceCode.take(8)}...)")
+            logger.debug("Polling device token (code=${deviceCode.take(8)}..., interval=${pollingIntervalMs}ms)")
             val result =
                 withContext(Dispatchers.IO) {
                     authenticationRepository.pollDeviceTokenOnce(deviceCode)
                 }
 
-            result
-                .onSuccess { token ->
-                    if (token != null) {
-                        logger.debug("Poll success — token received, navigating")
-                        pollingJob?.cancel()
-                        countdownJob?.cancel()
-                        clearSavedState()
-                        _state.update {
-                            it.copy(loginState = AuthLoginState.LoggedIn, isPolling = false)
-                        }
-                        _events.trySend(AuthenticationEvents.OnNavigateToMain)
-                    } else {
-                        logger.debug("Poll result: still pending")
-                        _state.update { it.copy(isPolling = false) }
-                    }
-                }.onFailure { error ->
-                    logger.debug("Poll failed terminally: ${error.message}")
+            when (result) {
+                is DevicePollResult.Success -> {
+                    logger.debug("Poll success — token received, navigating")
                     pollingJob?.cancel()
                     countdownJob?.cancel()
                     clearSavedState()
-                    val (message, hint) = categorizeError(error)
+                    _state.update {
+                        it.copy(loginState = AuthLoginState.LoggedIn, isPolling = false)
+                    }
+                    _events.trySend(AuthenticationEvents.OnNavigateToMain)
+                }
+
+                is DevicePollResult.Pending -> {
+                    logger.debug("Poll result: still pending")
+                    _state.update { it.copy(isPolling = false, pollIntervalSec = 0) }
+                }
+
+                is DevicePollResult.SlowDown -> {
+                    pollingIntervalMs += 5000L
+                    logger.debug("Poll result: slow_down — increased interval to ${pollingIntervalMs}ms")
+                    _state.update {
+                        it.copy(
+                            isPolling = false,
+                            pollIntervalSec = (pollingIntervalMs / 1000).toInt(),
+                        )
+                    }
+                    // Don't restart — the existing polling loop reads pollingIntervalMs
+                    // on each iteration via delay(), so it will pick up the new value.
+                }
+
+                is DevicePollResult.Failed -> {
+                    logger.debug("Poll failed terminally: ${result.error.message}")
+                    pollingJob?.cancel()
+                    countdownJob?.cancel()
+                    clearSavedState()
+                    val (message, hint) = categorizeError(result.error)
                     _state.update {
                         it.copy(
                             loginState =
@@ -296,6 +310,7 @@ class AuthenticationViewModel(
                         )
                     }
                 }
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (t: Throwable) {

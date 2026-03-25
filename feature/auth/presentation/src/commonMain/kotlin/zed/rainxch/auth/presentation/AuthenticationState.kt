@@ -7,4 +7,5 @@ data class AuthenticationState(
     val copied: Boolean = false,
     val info: String? = null,
     val isPolling: Boolean = false,
+    val pollIntervalSec: Int = 0,
 )

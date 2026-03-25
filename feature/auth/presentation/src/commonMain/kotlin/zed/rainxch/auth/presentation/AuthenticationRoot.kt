@@ -82,6 +82,7 @@ import zed.rainxch.githubstore.core.presentation.res.auth_check_status
 import zed.rainxch.githubstore.core.presentation.res.auth_code_expires_in
 import zed.rainxch.githubstore.core.presentation.res.auth_error_with_message
 import zed.rainxch.githubstore.core.presentation.res.auth_polling_status
+import zed.rainxch.githubstore.core.presentation.res.auth_rate_limited
 import zed.rainxch.githubstore.core.presentation.res.continue_as_guest
 import zed.rainxch.githubstore.core.presentation.res.copy_code
 import zed.rainxch.githubstore.core.presentation.res.enter_code_on_github
@@ -529,6 +530,15 @@ private fun StateDevicePrompt(
                         stringResource(Res.string.auth_check_status)
                     },
                 style = MaterialTheme.typography.labelLarge,
+            )
+        }
+
+        if (state.pollIntervalSec > 0) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(Res.string.auth_rate_limited, state.pollIntervalSec),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 

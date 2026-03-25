@@ -11,6 +11,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import zed.rainxch.auth.data.network.GitHubAuthApi
 import zed.rainxch.auth.domain.repository.AuthenticationRepository
+import zed.rainxch.auth.domain.repository.DevicePollResult
 import zed.rainxch.core.data.data_source.TokenStore
 import zed.rainxch.core.data.mappers.toData
 import zed.rainxch.core.data.mappers.toDomain
@@ -223,7 +224,7 @@ class AuthenticationRepositoryImpl(
         }
     }
 
-    override suspend fun pollDeviceTokenOnce(deviceCode: String): Result<GithubDeviceTokenSuccess?> =
+    override suspend fun pollDeviceTokenOnce(deviceCode: String): DevicePollResult =
         withContext(Dispatchers.IO) {
             val clientId = BuildKonfig.GITHUB_CLIENT_ID
             try {
@@ -233,18 +234,23 @@ class AuthenticationRepositoryImpl(
                 if (success != null) {
                     logger.debug("✅ Single poll: Token received! Saving...")
                     saveTokenWithVerification(success)
-                    Result.success(success)
+                    DevicePollResult.Success(success)
                 } else {
                     val error = res.exceptionOrNull()
                     val errorMsg = (error?.message ?: "").lowercase()
 
                     when {
-                        "authorization_pending" in errorMsg || "slow_down" in errorMsg -> {
-                            Result.success(null)
+                        "slow_down" in errorMsg -> {
+                            logger.debug("⚠️ GitHub says slow down")
+                            DevicePollResult.SlowDown
+                        }
+
+                        "authorization_pending" in errorMsg -> {
+                            DevicePollResult.Pending
                         }
 
                         "access_denied" in errorMsg -> {
-                            Result.failure(
+                            DevicePollResult.Failed(
                                 Exception("Authentication was denied. Please try again if this was a mistake."),
                             )
                         }
@@ -252,21 +258,21 @@ class AuthenticationRepositoryImpl(
                         "expired_token" in errorMsg ||
                             "expired_device_code" in errorMsg ||
                             "token_expired" in errorMsg -> {
-                            Result.failure(
+                            DevicePollResult.Failed(
                                 Exception("Authorization code expired. Please try again."),
                             )
                         }
 
                         "bad_verification_code" in errorMsg ||
                             "incorrect_device_code" in errorMsg -> {
-                            Result.failure(
+                            DevicePollResult.Failed(
                                 Exception("Invalid verification code. Please restart authentication."),
                             )
                         }
 
                         else -> {
                             logger.debug("⚠️ Single poll unknown error: $errorMsg")
-                            Result.success(null)
+                            DevicePollResult.Pending
                         }
                     }
                 }
@@ -274,7 +280,7 @@ class AuthenticationRepositoryImpl(
                 throw e
             } catch (e: Exception) {
                 logger.debug("⚠️ Single poll network error: ${e.message}")
-                Result.success(null)
+                DevicePollResult.Pending
             }
         }
 

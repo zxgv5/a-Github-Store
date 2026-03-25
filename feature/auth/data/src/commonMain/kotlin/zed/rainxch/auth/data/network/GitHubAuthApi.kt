@@ -117,7 +117,8 @@ object GitHubAuthApi {
                     )
                 }
             val status = res.status
-            val text = res.body<String>()
+            val text = res.bodyAsText()
+
 
             if (status !in HttpStatusCode.OK..HttpStatusCode.MultipleChoices) {
                 return Result.failure(
@@ -129,8 +130,9 @@ object GitHubAuthApi {
 
             try {
                 val ok = json.decodeFromString(GithubDeviceTokenSuccessDto.serializer(), text)
+
                 Result.success(ok)
-            } catch (_: Throwable) {
+            } catch (e: Throwable) {
                 val err = json.decodeFromString(GithubDeviceTokenErrorDto.serializer(), text)
                 val message =
                     buildString {
@@ -141,9 +143,11 @@ object GitHubAuthApi {
                             append(desc)
                         }
                     }
+
                 Result.failure(IllegalStateException(message))
             }
         } catch (e: Exception) {
+
             Result.failure(e)
         }
     }

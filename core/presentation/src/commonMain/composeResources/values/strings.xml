@@ -453,6 +453,7 @@
     <string name="auth_hint_denied">You denied the authorization request. Try again if this was unintentional.</string>
     <string name="auth_check_status">I already authorized</string>
     <string name="auth_polling_status">Checking…</string>
+    <string name="auth_rate_limited">Rate limited — retrying in %1$ds</string>
 
     <!-- Read More / Show Less -->
     <string name="read_more">Read More</string>
