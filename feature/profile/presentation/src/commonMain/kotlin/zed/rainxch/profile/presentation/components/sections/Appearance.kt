@@ -135,6 +135,17 @@ fun LazyListScope.appearanceSection(
                 onAction(ProfileAction.OnLiquidGlassEnabledChange(enabled))
             },
         )
+
+        Spacer(Modifier.height(8.dp))
+
+        ToggleSettingCard(
+            title = stringResource(Res.string.scrollbar_option_title),
+            description = stringResource(Res.string.scrollbar_option_description),
+            checked = state.isScrollbarEnabled,
+            onCheckedChange = { enabled ->
+                onAction(ProfileAction.OnScrollbarToggled(enabled))
+            },
+        )
     }
 }
 

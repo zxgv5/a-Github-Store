@@ -54,4 +54,8 @@ interface TweaksRepository {
     fun getDiscoveryPlatform(): Flow<DiscoveryPlatform>
 
     suspend fun setDiscoveryPlatform(platform: DiscoveryPlatform)
+
+    fun getScrollbarEnabled(): Flow<Boolean>
+
+    suspend fun setScrollbarEnabled(enabled: Boolean)
 }

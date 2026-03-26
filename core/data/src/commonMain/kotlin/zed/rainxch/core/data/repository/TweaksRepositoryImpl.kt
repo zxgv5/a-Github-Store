@@ -157,6 +157,17 @@ class TweaksRepositoryImpl(
         }
     }
 
+    override fun getScrollbarEnabled(): Flow<Boolean> =
+        preferences.data.map { prefs ->
+            prefs[SCROLLBAR_ENABLED_KEY] ?: false
+        }
+
+    override suspend fun setScrollbarEnabled(enabled: Boolean) {
+        preferences.edit { prefs ->
+            prefs[SCROLLBAR_ENABLED_KEY] = enabled
+        }
+    }
+
     companion object {
         private const val DEFAULT_UPDATE_CHECK_INTERVAL_HOURS = 6L
 
@@ -172,5 +183,6 @@ class TweaksRepositoryImpl(
         private val INCLUDE_PRE_RELEASES_KEY = booleanPreferencesKey("include_pre_releases")
         private val LIQUID_GLASS_ENABLED_KEY = booleanPreferencesKey("liquid_glass_enabled")
         private val HIDE_SEEN_ENABLED_KEY = booleanPreferencesKey("hide_seen_enabled")
+        private val SCROLLBAR_ENABLED_KEY = booleanPreferencesKey("scrollbar_enabled")
     }
 }

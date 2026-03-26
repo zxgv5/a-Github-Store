@@ -84,8 +84,10 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import zed.rainxch.core.presentation.components.GithubStoreButton
 import zed.rainxch.core.presentation.components.RepositoryCard
+import zed.rainxch.core.presentation.components.ScrollbarContainer
 import zed.rainxch.core.presentation.locals.LocalBottomNavigationHeight
 import zed.rainxch.core.presentation.locals.LocalBottomNavigationLiquid
+import zed.rainxch.core.presentation.locals.LocalScrollbarEnabled
 import zed.rainxch.core.presentation.theme.GithubStoreTheme
 import zed.rainxch.core.presentation.utils.ObserveAsEvents
 import zed.rainxch.githubstore.core.presentation.res.*
@@ -526,6 +528,12 @@ fun SearchScreen(
                 }
 
                 if (visibleRepos.isNotEmpty()) {
+                    val isScrollbarEnabled = LocalScrollbarEnabled.current
+                    ScrollbarContainer(
+                        gridState = listState,
+                        enabled = isScrollbarEnabled,
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
                     LazyVerticalStaggeredGrid(
                         state = listState,
                         columns = StaggeredGridCells.Adaptive(350.dp),
@@ -587,6 +595,7 @@ fun SearchScreen(
                             }
                         }
                     }
+                    } // ScrollbarContainer
                 }
             }
         }

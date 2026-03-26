@@ -31,4 +31,5 @@ data class ProfileState(
     val includePreReleases: Boolean = false,
     val isLiquidGlassEnabled: Boolean = true,
     val isHideSeenEnabled: Boolean = false,
+    val isScrollbarEnabled: Boolean = false,
 )

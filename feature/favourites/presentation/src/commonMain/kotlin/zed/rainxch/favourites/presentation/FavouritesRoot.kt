@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularWavyProgressIndicator
@@ -32,6 +33,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import zed.rainxch.core.presentation.theme.GithubStoreTheme
+import zed.rainxch.core.presentation.components.ScrollbarContainer
+import zed.rainxch.core.presentation.locals.LocalScrollbarEnabled
 import zed.rainxch.favourites.presentation.components.FavouriteRepositoryItem
 import zed.rainxch.githubstore.core.presentation.res.*
 
@@ -86,33 +89,42 @@ fun FavouritesScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
         ) {
-            LazyVerticalStaggeredGrid(
-                columns =
-                    StaggeredGridCells.Adaptive(
-                        350.dp,
-                    ),
-                verticalItemSpacing = 12.dp,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+            val gridState = rememberLazyStaggeredGridState()
+            val isScrollbarEnabled = LocalScrollbarEnabled.current
+            ScrollbarContainer(
+                gridState = gridState,
+                enabled = isScrollbarEnabled,
                 modifier = Modifier.fillMaxSize(),
             ) {
-                items(
-                    items = state.favouriteRepositories,
-                    key = { it.repoId },
-                ) { repo ->
-                    FavouriteRepositoryItem(
-                        favouriteRepository = repo,
-                        onToggleFavouriteClick = {
-                            onAction(FavouritesAction.OnToggleFavorite(repo))
-                        },
-                        onItemClick = {
-                            onAction(FavouritesAction.OnRepositoryClick(repo))
-                        },
-                        onDevProfileClick = {
-                            onAction(FavouritesAction.OnDeveloperProfileClick(repo.repoOwner))
-                        },
-                        modifier = Modifier.animateItem(),
-                    )
+                LazyVerticalStaggeredGrid(
+                    state = gridState,
+                    columns =
+                        StaggeredGridCells.Adaptive(
+                            350.dp,
+                        ),
+                    verticalItemSpacing = 12.dp,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(
+                        items = state.favouriteRepositories,
+                        key = { it.repoId },
+                    ) { repo ->
+                        FavouriteRepositoryItem(
+                            favouriteRepository = repo,
+                            onToggleFavouriteClick = {
+                                onAction(FavouritesAction.OnToggleFavorite(repo))
+                            },
+                            onItemClick = {
+                                onAction(FavouritesAction.OnRepositoryClick(repo))
+                            },
+                            onDevProfileClick = {
+                                onAction(FavouritesAction.OnDeveloperProfileClick(repo.repoOwner))
+                            },
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
                 }
             }
 

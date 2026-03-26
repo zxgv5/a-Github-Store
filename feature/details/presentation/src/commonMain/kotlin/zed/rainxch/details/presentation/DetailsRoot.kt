@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -58,6 +59,8 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import zed.rainxch.core.presentation.components.ScrollbarContainer
+import zed.rainxch.core.presentation.locals.LocalScrollbarEnabled
 import zed.rainxch.core.presentation.theme.GithubStoreTheme
 import zed.rainxch.core.presentation.utils.ObserveAsEvents
 import zed.rainxch.core.presentation.utils.isLiquidFrostAvailable
@@ -404,23 +407,35 @@ fun DetailsScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 val collapsedSectionHeight = maxHeight * 0.7f
+                val listState = rememberLazyListState()
+                val isScrollbarEnabled = LocalScrollbarEnabled.current
 
-                LazyColumn(
+                ScrollbarContainer(
+                    listState = listState,
+                    enabled = isScrollbarEnabled,
                     modifier =
                         Modifier
                             .fillMaxHeight()
                             .widthIn(max = 680.dp)
-                            .fillMaxWidth()
-                            .then(
-                                if (state.isLiquidGlassEnabled) {
-                                    Modifier.liquefiable(liquidTopbarState)
-                                } else {
-                                    Modifier
-                                },
-                            ).padding(innerPadding),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                            .fillMaxWidth(),
                 ) {
+                    LazyColumn(
+                        state = listState,
+                        modifier =
+                            Modifier
+                                .fillMaxHeight()
+                                .widthIn(max = 680.dp)
+                                .fillMaxWidth()
+                                .then(
+                                    if (state.isLiquidGlassEnabled) {
+                                        Modifier.liquefiable(liquidTopbarState)
+                                    } else {
+                                        Modifier
+                                    },
+                                ).padding(innerPadding),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
                     header(
                         state = state,
                         onAction = onAction,
@@ -533,6 +548,7 @@ fun DetailsScreen(
 
                     if (state.installLogs.isNotEmpty()) {
                         logs(state)
+                    }
                     }
                 }
             }

@@ -81,6 +81,12 @@ class MainViewModel(
         }
 
         viewModelScope.launch {
+            tweaksRepository.getScrollbarEnabled().collect { enabled ->
+                _state.update { it.copy(isScrollbarEnabled = enabled) }
+            }
+        }
+
+        viewModelScope.launch {
             rateLimitRepository.rateLimitState.collect { rateLimitInfo ->
                 _state.update { currentState ->
                     currentState.copy(rateLimitInfo = rateLimitInfo)

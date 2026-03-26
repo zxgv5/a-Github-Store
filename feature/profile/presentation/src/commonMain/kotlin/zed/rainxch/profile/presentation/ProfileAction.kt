@@ -101,4 +101,8 @@ sealed interface ProfileAction {
     data object OnClearSeenRepos : ProfileAction
 
     data object OnSponsorClick : ProfileAction
+
+    data class OnScrollbarToggled(
+        val enabled: Boolean,
+    ) : ProfileAction
 }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -42,6 +43,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import zed.rainxch.core.presentation.components.GithubStoreButton
+import zed.rainxch.core.presentation.components.ScrollbarContainer
+import zed.rainxch.core.presentation.locals.LocalScrollbarEnabled
 import zed.rainxch.devprofile.domain.model.RepoFilterType
 import zed.rainxch.devprofile.presentation.components.DeveloperRepoItem
 import zed.rainxch.devprofile.presentation.components.FilterSortControls
@@ -121,11 +124,19 @@ fun DeveloperProfileScreen(
                 }
 
                 state.profile != null -> {
-                    LazyColumn(
+                    val listState = rememberLazyListState()
+                    val isScrollbarEnabled = LocalScrollbarEnabled.current
+                    ScrollbarContainer(
+                        listState = listState,
+                        enabled = isScrollbarEnabled,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
                         item {
                             ProfileInfoCard(
                                 profile = state.profile,
@@ -187,6 +198,7 @@ fun DeveloperProfileScreen(
                                 )
                             }
                         }
+                    }
                     }
                 }
             }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -47,6 +48,8 @@ import kotlinx.collections.immutable.persistentListOf
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import zed.rainxch.core.presentation.components.GithubStoreButton
+import zed.rainxch.core.presentation.components.ScrollbarContainer
+import zed.rainxch.core.presentation.locals.LocalScrollbarEnabled
 import zed.rainxch.core.presentation.theme.GithubStoreTheme
 import zed.rainxch.githubstore.core.presentation.res.*
 import zed.rainxch.starred.presentation.components.StarredRepositoryItem
@@ -148,30 +151,39 @@ fun StarredScreen(
                         state = pullRefreshState,
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        LazyVerticalStaggeredGrid(
-                            columns = StaggeredGridCells.Adaptive(350.dp),
-                            verticalItemSpacing = 12.dp,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+                        val gridState = rememberLazyStaggeredGridState()
+                        val isScrollbarEnabled = LocalScrollbarEnabled.current
+                        ScrollbarContainer(
+                            gridState = gridState,
+                            enabled = isScrollbarEnabled,
                             modifier = Modifier.fillMaxSize(),
                         ) {
-                            items(
-                                items = state.starredRepositories,
-                                key = { it.repoId },
-                            ) { repo ->
-                                StarredRepositoryItem(
-                                    repository = repo,
-                                    onToggleFavoriteClick = {
-                                        onAction(StarredReposAction.OnToggleFavorite(repo))
-                                    },
-                                    onItemClick = {
-                                        onAction(StarredReposAction.OnRepositoryClick(repo))
-                                    },
-                                    onDevProfileClick = {
-                                        onAction(StarredReposAction.OnDeveloperProfileClick(repo.repoOwner))
-                                    },
-                                    modifier = Modifier.animateItem(),
-                                )
+                            LazyVerticalStaggeredGrid(
+                                state = gridState,
+                                columns = StaggeredGridCells.Adaptive(350.dp),
+                                verticalItemSpacing = 12.dp,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+                                modifier = Modifier.fillMaxSize(),
+                            ) {
+                                items(
+                                    items = state.starredRepositories,
+                                    key = { it.repoId },
+                                ) { repo ->
+                                    StarredRepositoryItem(
+                                        repository = repo,
+                                        onToggleFavoriteClick = {
+                                            onAction(StarredReposAction.OnToggleFavorite(repo))
+                                        },
+                                        onItemClick = {
+                                            onAction(StarredReposAction.OnRepositoryClick(repo))
+                                        },
+                                        onDevProfileClick = {
+                                            onAction(StarredReposAction.OnDeveloperProfileClick(repo.repoOwner))
+                                        },
+                                        modifier = Modifier.animateItem(),
+                                    )
+                                }
                             }
                         }
                     }

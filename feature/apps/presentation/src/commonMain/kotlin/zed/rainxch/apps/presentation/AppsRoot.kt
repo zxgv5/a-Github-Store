@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -79,8 +80,10 @@ import zed.rainxch.apps.presentation.model.AppItem
 import zed.rainxch.apps.presentation.model.UpdateAllProgress
 import zed.rainxch.apps.presentation.model.UpdateState
 import zed.rainxch.core.presentation.components.ExpressiveCard
+import zed.rainxch.core.presentation.components.ScrollbarContainer
 import zed.rainxch.core.presentation.locals.LocalBottomNavigationHeight
 import zed.rainxch.core.presentation.locals.LocalBottomNavigationLiquid
+import zed.rainxch.core.presentation.locals.LocalScrollbarEnabled
 import zed.rainxch.core.presentation.theme.GithubStoreTheme
 import zed.rainxch.core.presentation.utils.ObserveAsEvents
 import zed.rainxch.githubstore.core.presentation.res.Res
@@ -421,36 +424,45 @@ fun AppsScreen(
                     }
 
                     else -> {
-                        LazyColumn(
+                        val listState = rememberLazyListState()
+                        val isScrollbarEnabled = LocalScrollbarEnabled.current
+                        ScrollbarContainer(
+                            listState = listState,
+                            enabled = isScrollbarEnabled,
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            items(
-                                items = state.filteredApps,
-                                key = { it.installedApp.packageName },
-                            ) { appItem ->
-                                AppItemCard(
-                                    appItem = appItem,
-                                    onOpenClick = { onAction(AppsAction.OnOpenApp(appItem.installedApp)) },
-                                    onUpdateClick = { onAction(AppsAction.OnUpdateApp(appItem.installedApp)) },
-                                    onCancelClick = { onAction(AppsAction.OnCancelUpdate(appItem.installedApp.packageName)) },
-                                    onUninstallClick = { onAction(AppsAction.OnUninstallApp(appItem.installedApp)) },
-                                    onRepoClick = { onAction(AppsAction.OnNavigateToRepo(appItem.installedApp.repoId)) },
-                                    modifier =
-                                        Modifier
-                                            .then(
-                                                if (state.isLiquidGlassEnabled) {
-                                                    Modifier.liquefiable(liquidState)
-                                                } else {
-                                                    Modifier
-                                                },
-                                            ),
-                                )
-                            }
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                items(
+                                    items = state.filteredApps,
+                                    key = { it.installedApp.packageName },
+                                ) { appItem ->
+                                    AppItemCard(
+                                        appItem = appItem,
+                                        onOpenClick = { onAction(AppsAction.OnOpenApp(appItem.installedApp)) },
+                                        onUpdateClick = { onAction(AppsAction.OnUpdateApp(appItem.installedApp)) },
+                                        onCancelClick = { onAction(AppsAction.OnCancelUpdate(appItem.installedApp.packageName)) },
+                                        onUninstallClick = { onAction(AppsAction.OnUninstallApp(appItem.installedApp)) },
+                                        onRepoClick = { onAction(AppsAction.OnNavigateToRepo(appItem.installedApp.repoId)) },
+                                        modifier =
+                                            Modifier
+                                                .then(
+                                                    if (state.isLiquidGlassEnabled) {
+                                                        Modifier.liquefiable(liquidState)
+                                                    } else {
+                                                        Modifier
+                                                    },
+                                                ),
+                                    )
+                                }
 
-                            item {
-                                Spacer(Modifier.height(bottomNavHeight + 32.dp))
+                                item {
+                                    Spacer(Modifier.height(bottomNavHeight + 32.dp))
+                                }
                             }
                         }
                     }

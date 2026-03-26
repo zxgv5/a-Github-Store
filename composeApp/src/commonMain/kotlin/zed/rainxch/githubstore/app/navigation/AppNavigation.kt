@@ -31,6 +31,7 @@ import zed.rainxch.apps.presentation.AppsViewModel
 import zed.rainxch.auth.presentation.AuthenticationRoot
 import zed.rainxch.core.presentation.locals.LocalBottomNavigationHeight
 import zed.rainxch.core.presentation.locals.LocalBottomNavigationLiquid
+import zed.rainxch.core.presentation.locals.LocalScrollbarEnabled
 import zed.rainxch.details.presentation.DetailsRoot
 import zed.rainxch.devprofile.presentation.DeveloperProfileRoot
 import zed.rainxch.favourites.presentation.FavouritesRoot
@@ -43,6 +44,7 @@ import zed.rainxch.starred.presentation.StarredReposRoot
 fun AppNavigation(
     navController: NavHostController,
     isLiquidGlassEnabled: Boolean = true,
+    isScrollbarEnabled: Boolean = false,
 ) {
     val liquidState = rememberLiquidState()
     var bottomNavigationHeight by remember { mutableStateOf(0.dp) }
@@ -54,6 +56,7 @@ fun AppNavigation(
     CompositionLocalProvider(
         LocalBottomNavigationLiquid provides liquidState,
         LocalBottomNavigationHeight provides bottomNavigationHeight,
+        LocalScrollbarEnabled provides isScrollbarEnabled,
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),

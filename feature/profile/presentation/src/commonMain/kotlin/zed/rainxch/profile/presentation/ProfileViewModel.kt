@@ -54,6 +54,7 @@ class ProfileViewModel(
                     loadIncludePreReleases()
                     loadLiquidGlassEnabled()
                     loadHideSeenEnabled()
+                    loadScrollbarEnabled()
 
                     observeLoggedInStatus()
 
@@ -270,6 +271,16 @@ class ProfileViewModel(
         }
     }
 
+    private fun loadScrollbarEnabled() {
+        viewModelScope.launch {
+            tweaksRepository.getScrollbarEnabled().collect { enabled ->
+                _state.update {
+                    it.copy(isScrollbarEnabled = enabled)
+                }
+            }
+        }
+    }
+
     private fun loadIncludePreReleases() {
         viewModelScope.launch {
             tweaksRepository.getIncludePreReleases().collect { enabled ->
@@ -445,6 +456,12 @@ class ProfileViewModel(
             is ProfileAction.OnHideSeenToggled -> {
                 viewModelScope.launch {
                     tweaksRepository.setHideSeenEnabled(action.enabled)
+                }
+            }
+
+            is ProfileAction.OnScrollbarToggled -> {
+                viewModelScope.launch {
+                    tweaksRepository.setScrollbarEnabled(action.enabled)
                 }
             }
 

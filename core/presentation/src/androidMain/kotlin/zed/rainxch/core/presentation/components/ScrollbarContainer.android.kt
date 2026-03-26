@@ -1,0 +1,26 @@
+package zed.rainxch.core.presentation.components
+
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+
+@Composable
+actual fun ScrollbarContainer(
+    listState: LazyListState,
+    enabled: Boolean,
+    modifier: Modifier,
+    content: @Composable () -> Unit,
+) {
+    content()
+}
+
+@Composable
+actual fun ScrollbarContainer(
+    gridState: LazyStaggeredGridState,
+    enabled: Boolean,
+    modifier: Modifier,
+    content: @Composable () -> Unit,
+) {
+    content()
+}
