@@ -360,7 +360,7 @@ private fun LiquidGlassTabItem(
     )
 
     val horizontalPadding by animateDpAsState(
-        targetValue = if (isSelected) 20.dp else 14.dp,
+        targetValue = if (isSelected) 14.dp else 10.dp,
         animationSpec =
             spring(
                 dampingRatio = Spring.DampingRatioNoBouncy,
