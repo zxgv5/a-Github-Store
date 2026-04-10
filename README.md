@@ -166,6 +166,22 @@ GitHub® is a registered trademark of GitHub, Inc.
 > [!IMPORTANT]
 > **macOS Users:** You may see a warning that Apple cannot verify GitHub Store. This happens because the app is distributed outside the App Store and is not notarized yet. Allow it via System Settings → Privacy & Security → Open Anyway.
 
+> [!TIP]
+> **Windows Users:** Install GitHub Store with your preferred package manager.
+
+**Scoop**
+
+```powershell
+scoop bucket add scoop-bucket https://github.com/OpenHub-Store/scoop-bucket
+scoop install scoop-bucket/github-store
+```
+
+**Winget**
+
+```powershell
+winget install zed.rainxch.githubstore
+```
+
 ---
 
 <p align="center">
