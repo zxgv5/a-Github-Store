@@ -20,4 +20,5 @@ data class GithubRepoSummaryUi(
     val updatedAt: String,
     val isFork: Boolean = false,
     val availablePlatforms: ImmutableList<DiscoveryPlatform> = persistentListOf(),
+    val downloadCount: Long = 0,
 )

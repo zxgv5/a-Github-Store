@@ -21,8 +21,11 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Update
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -188,37 +191,32 @@ fun RepositoryCard(
 
                 Spacer(Modifier.height(8.dp))
 
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
                 ) {
-                    Text(
-                        text = "⭐ ${discoveryRepositoryUi.repository.stargazersCount}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
+                    InfoChip(
+                        icon = Icons.Outlined.StarOutline,
+                        text = formatCount(discoveryRepositoryUi.repository.stargazersCount.toLong()),
                     )
 
-                    Text(
-                        text = "• 🌴 ${discoveryRepositoryUi.repository.forksCount}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
+                    InfoChip(
+                        icon = Icons.AutoMirrored.Outlined.CallSplit,
+                        text = formatCount(discoveryRepositoryUi.repository.forksCount.toLong()),
                     )
+
+                    if (discoveryRepositoryUi.repository.downloadCount > 0) {
+                        InfoChip(
+                            icon = Icons.Outlined.Download,
+                            text = formatCount(discoveryRepositoryUi.repository.downloadCount),
+                        )
+                    }
 
                     discoveryRepositoryUi.repository.language?.let {
-                        Text(
-                            text = "• $it",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis,
+                        InfoChip(
+                            icon = Icons.Outlined.Code,
+                            text = it,
                         )
                     }
                 }
@@ -351,7 +349,7 @@ fun PlatformChip(
 
             Text(
                 text = platform.name,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -515,3 +513,43 @@ fun RepositoryCardPreview() {
         )
     }
 }
+
+@Composable
+private fun InfoChip(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+private fun formatCount(count: Long): String =
+    when {
+        count >= 1_000_000 -> String.format("%.1fM", count / 1_000_000.0)
+        count >= 1_000 -> String.format("%.1fK", count / 1_000.0)
+        else -> count.toString()
+    }

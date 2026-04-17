@@ -20,6 +20,7 @@ fun GithubRepoSummary.toUi(): GithubRepoSummaryUi {
         releasesUrl = releasesUrl,
         updatedAt = updatedAt,
         isFork = isFork,
-        availablePlatforms = availablePlatforms.toImmutableList()
+        availablePlatforms = availablePlatforms.toImmutableList(),
+        downloadCount = downloadCount,
     )
 }
