@@ -18,8 +18,6 @@ kotlin {
                 implementation(libs.jetbrains.compose.components.resources)
 
                 implementation(libs.kotlinx.collections.immutable)
-
-                implementation(libs.touchlab.kermit)
             }
         }
     }

@@ -2,7 +2,6 @@ package zed.rainxch.search.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import co.touchlab.kermit.Logger as KermitLogger
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -66,7 +65,7 @@ class SearchViewModel(
     private var explorePage = 1
     private var lastExploreQuery = ""
 
-    private val exploreLog = KermitLogger.withTag("SearchExplore")
+    private val exploreLog = logger.withTag("SearchExplore")
 
     companion object {
         private const val MIN_QUERY_LENGTH = 3
@@ -297,7 +296,12 @@ class SearchViewModel(
             currentPage = 1
             explorePage = 1
             lastExploreQuery = query
-            _state.update { it.copy(exploreStatus = SearchState.ExploreStatus.IDLE) }
+            _state.update {
+                it.copy(
+                    exploreStatus = SearchState.ExploreStatus.IDLE,
+                    passthroughAttempted = null,
+                )
+            }
         }
 
         currentSearchJob =
@@ -314,6 +318,8 @@ class SearchViewModel(
                                 it.repositories
                             },
                         totalCount = if (isInitial) null else it.totalCount,
+                        passthroughAttempted =
+                            if (isInitial) null else it.passthroughAttempted,
                     )
                 }
 
@@ -683,24 +689,24 @@ class SearchViewModel(
         val platformUi = _state.value.selectedSearchPlatform
         val prevStatus = _state.value.exploreStatus
 
-        exploreLog.d {
+        exploreLog.debug(
             "click: query='$query' platform=$platformUi " +
-                "page=$explorePage lastQuery='$lastExploreQuery' status=$prevStatus"
-        }
+                "page=$explorePage lastQuery='$lastExploreQuery' status=$prevStatus",
+        )
 
         if (query.isBlank()) {
-            exploreLog.d { "skipped: query is blank" }
+            exploreLog.debug("skipped: query is blank")
             return
         }
         if (prevStatus == SearchState.ExploreStatus.LOADING) {
-            exploreLog.d { "skipped: already LOADING" }
+            exploreLog.debug("skipped: already LOADING")
             return
         }
 
         if (query != lastExploreQuery) {
-            exploreLog.d {
-                "query changed ('$lastExploreQuery' -> '$query'); resetting page to 1"
-            }
+            exploreLog.debug(
+                "query changed ('$lastExploreQuery' -> '$query'); resetting page to 1",
+            )
             explorePage = 1
             lastExploreQuery = query
         }
@@ -715,11 +721,11 @@ class SearchViewModel(
                     page = explorePage,
                 )
                 val existingCount = _state.value.repositories.size
-                exploreLog.d {
+                exploreLog.debug(
                     "response: items=${exploreResult.repos.size} " +
                         "returnedPage=${exploreResult.page} hasMore=${exploreResult.hasMore} " +
-                        "existingVisible=$existingCount"
-                }
+                        "existingVisible=$existingCount",
+                )
 
                 val before = _state.value.repositories.size
                 if (exploreResult.repos.isNotEmpty()) {
@@ -730,21 +736,21 @@ class SearchViewModel(
 
                 if (exploreResult.hasMore) {
                     explorePage++
-                    exploreLog.d {
-                        "-> IDLE: appended=$added dupes=$dupes nextPage=$explorePage"
-                    }
+                    exploreLog.debug(
+                        "-> IDLE: appended=$added dupes=$dupes nextPage=$explorePage",
+                    )
                     _state.update { it.copy(exploreStatus = SearchState.ExploreStatus.IDLE) }
                 } else {
-                    exploreLog.d {
+                    exploreLog.debug(
                         "-> EXHAUSTED: appended=$added dupes=$dupes " +
-                            "rawItems=${exploreResult.repos.size}"
-                    }
+                            "rawItems=${exploreResult.repos.size}",
+                    )
                     _state.update { it.copy(exploreStatus = SearchState.ExploreStatus.EXHAUSTED) }
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                exploreLog.e(e) { "failed: ${e::class.simpleName}: ${e.message}" }
+                exploreLog.error("failed: ${e::class.simpleName}: ${e.message}", e)
                 _state.update { it.copy(exploreStatus = SearchState.ExploreStatus.IDLE) }
                 _events.send(SearchEvent.OnMessage(getString(Res.string.explore_error)))
             }
