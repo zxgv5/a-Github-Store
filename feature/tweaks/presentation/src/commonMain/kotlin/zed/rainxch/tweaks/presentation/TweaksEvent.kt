@@ -28,4 +28,14 @@ sealed interface TweaksEvent {
     data object OnTranslationProviderSaved : TweaksEvent
 
     data object OnYoudaoCredentialsSaved : TweaksEvent
+
+    /**
+     * Fired on platforms where changing the UI language cannot be
+     * applied in-place (currently Desktop — no `Activity.recreate()`
+     * equivalent). The UI prompts the user to restart so the new
+     * locale takes effect on the next cold start. On Android this
+     * event is never emitted; `MainActivity` handles runtime changes
+     * via `recreate()` directly.
+     */
+    data object OnAppLanguageChangeRequiresRestart : TweaksEvent
 }

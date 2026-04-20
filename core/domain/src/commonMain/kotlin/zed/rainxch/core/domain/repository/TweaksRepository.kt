@@ -75,4 +75,15 @@ interface TweaksRepository {
     fun getYoudaoAppSecret(): Flow<String>
 
     suspend fun setYoudaoAppSecret(appSecret: String)
+
+    /**
+     * Selected UI language as a BCP 47 tag (e.g. `zh-CN`). Emits
+     * `null` when the user hasn't picked one — which means "follow
+     * whatever the JVM/Android locale is" at app start. `null` is
+     * distinct from `""`: the former is the unset state, the latter
+     * would be a malformed user choice we don't support.
+     */
+    fun getAppLanguage(): Flow<String?>
+
+    suspend fun setAppLanguage(tag: String?)
 }

@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
+import zed.rainxch.core.domain.getPlatform
+import zed.rainxch.core.domain.model.Platform
 import zed.rainxch.core.domain.model.ProxyConfig
 import zed.rainxch.core.domain.model.ProxyScope
 import zed.rainxch.core.domain.model.TranslationProvider
@@ -72,6 +74,7 @@ class TweaksViewModel(
                     loadScrollbarEnabled()
                     loadTelemetryEnabled()
                     loadTranslationSettings()
+                    loadAppLanguage()
 
                     observeShizukuStatus()
 
@@ -359,6 +362,14 @@ class TweaksViewModel(
         viewModelScope.launch {
             tweaksRepository.getYoudaoAppSecret().collect { appSecret ->
                 _state.update { it.copy(youdaoAppSecret = appSecret) }
+            }
+        }
+    }
+
+    private fun loadAppLanguage() {
+        viewModelScope.launch {
+            tweaksRepository.getAppLanguage().collect { tag ->
+                _state.update { it.copy(selectedAppLanguage = tag) }
             }
         }
     }
@@ -737,6 +748,23 @@ class TweaksViewModel(
                     // the user emptied fields and cancelled implicitly.
                     _state.update { it.copy(draftTranslationProvider = null) }
                     _events.send(TweaksEvent.OnYoudaoCredentialsSaved)
+                }
+            }
+
+            is TweaksAction.OnAppLanguageSelected -> {
+                viewModelScope.launch {
+                    tweaksRepository.setAppLanguage(action.tag)
+                    // Android: `MainActivity` is subscribed to the
+                    // same preference flow and calls `recreate()` on
+                    // change — no extra nudging needed. Desktop has
+                    // no recreate-equivalent, so we surface a
+                    // "restart to apply" prompt; the user's choice is
+                    // already persisted and will take effect on the
+                    // next launch (or they can restart now via the
+                    // snackbar action).
+                    if (getPlatform() != Platform.ANDROID) {
+                        _events.send(TweaksEvent.OnAppLanguageChangeRequiresRestart)
+                    }
                 }
             }
         }

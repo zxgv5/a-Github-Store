@@ -130,4 +130,12 @@ sealed interface TweaksAction {
     data object OnYoudaoAppSecretVisibilityToggle : TweaksAction
 
     data object OnYoudaoCredentialsSave : TweaksAction
+
+    /**
+     * User picked a UI language. `tag == null` means "follow system
+     * locale" — cleared persisted preference.
+     */
+    data class OnAppLanguageSelected(
+        val tag: String?,
+    ) : TweaksAction
 }
