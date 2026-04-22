@@ -44,6 +44,16 @@ class AuthenticationViewModel(
     private var pollingIntervalMs: Long = DEFAULT_POLL_INTERVAL_SEC * 1000L
     private var authPath: AuthPath = AuthPath.Backend
 
+    /**
+     * Wall-clock timestamp (`System.currentTimeMillis()`) when the most
+     * recent poll *started*. Used to dedupe user-triggered polls against
+     * the background polling loop so that rapid interactions (tapping
+     * "Check status" multiple times, reopening the app repeatedly) don't
+     * stack polls on top of each other and trigger GitHub `slow_down`
+     * responses — the root cause of the "Rate limited" cascade.
+     */
+    private var lastPollStartedAtMs: Long = 0L
+
     private val _state: MutableStateFlow<AuthenticationState> =
         MutableStateFlow(AuthenticationState())
 
@@ -250,23 +260,42 @@ class AuthenticationViewModel(
 
     private fun tryPollIfReady() {
         val loginState = _state.value.loginState
-        if (loginState is AuthLoginState.DevicePrompt && !_state.value.isPolling) {
-            pollOnce(loginState.start.deviceCode)
+        if (loginState !is AuthLoginState.DevicePrompt) return
+        if (_state.value.isPolling) return
+
+        // Don't fire an on-resume poll if the background loop is about
+        // to fire one anyway — that double-poll is what escalates into
+        // `slow_down` responses. Leave a 500ms buffer so we do poll if
+        // the loop is clearly idle/stale.
+        val sinceLast = System.currentTimeMillis() - lastPollStartedAtMs
+        if (sinceLast < pollingIntervalMs - 500L) {
+            logger.debug("Resume poll suppressed — only ${sinceLast}ms since last poll (interval=${pollingIntervalMs}ms)")
+            return
         }
+
+        pollOnce(loginState.start.deviceCode)
     }
 
     private fun forcePollNow() {
         val loginState = _state.value.loginState
-        if (loginState is AuthLoginState.DevicePrompt) {
-            val deviceCode = loginState.start.deviceCode
-            logger.debug("Manual poll requested (isPolling=${_state.value.isPolling}, pollingJobActive=${pollingJob?.isActive})")
-            // Restart background polling if it died
-            if (pollingJob?.isActive != true) {
-                logger.debug("Polling job was dead — restarting background polling")
-                startPolling(deviceCode)
-            }
-            pollOnce(deviceCode)
+        if (loginState !is AuthLoginState.DevicePrompt) return
+        val deviceCode = loginState.start.deviceCode
+
+        // Hard-block manual polls that land within MIN_MANUAL_POLL_SPACING_MS
+        // of the last poll. Prevents user tap-spam from burning the
+        // `slow_down` budget.
+        val sinceLast = System.currentTimeMillis() - lastPollStartedAtMs
+        if (sinceLast < MIN_MANUAL_POLL_SPACING_MS) {
+            logger.debug("Manual poll suppressed — only ${sinceLast}ms since last poll")
+            return
         }
+
+        logger.debug("Manual poll requested (isPolling=${_state.value.isPolling}, pollingJobActive=${pollingJob?.isActive})")
+        if (pollingJob?.isActive != true) {
+            logger.debug("Polling job was dead — restarting background polling")
+            startPolling(deviceCode)
+        }
+        pollOnce(deviceCode)
     }
 
     private fun startLogin() {
@@ -355,6 +384,7 @@ class AuthenticationViewModel(
     }
 
     private suspend fun doPoll(deviceCode: String) {
+        lastPollStartedAtMs = System.currentTimeMillis()
         _state.update { it.copy(isPolling = true) }
         try {
             logger.debug("Polling device token (code=${deviceCode.take(8)}..., interval=${pollingIntervalMs}ms, path=$authPath)")
@@ -387,8 +417,20 @@ class AuthenticationViewModel(
                 }
 
                 is DevicePollResult.SlowDown -> {
-                    pollingIntervalMs += 5000L
-                    logger.debug("Poll result: slow_down — increased interval to ${pollingIntervalMs}ms")
+                    // Cap the interval so one rough patch of rapid polls
+                    // (e.g. several ON_RESUME stacks early in the session)
+                    // can't strand the user waiting 30+ seconds to pick
+                    // up a completed authorization.
+                    val bumped = (pollingIntervalMs + 5000L).coerceAtMost(MAX_POLL_INTERVAL_MS)
+                    val clamped = bumped == MAX_POLL_INTERVAL_MS && pollingIntervalMs >= MAX_POLL_INTERVAL_MS
+                    pollingIntervalMs = bumped
+                    logger.debug(
+                        if (clamped) {
+                            "Poll result: slow_down — interval already at cap ${MAX_POLL_INTERVAL_MS}ms"
+                        } else {
+                            "Poll result: slow_down — increased interval to ${pollingIntervalMs}ms"
+                        },
+                    )
                     _state.update {
                         it.copy(
                             isPolling = false,
@@ -575,6 +617,22 @@ class AuthenticationViewModel(
         private const val KEY_START_TIME_MILLIS = "auth_start_time_millis"
         private const val KEY_AUTH_PATH = "auth_path"
         private const val DEFAULT_POLL_INTERVAL_SEC = 5
+
+        /**
+         * Minimum wall-clock gap between a user-initiated manual poll
+         * (tap "Check status") and the previous poll. Anything closer
+         * gets silently dropped to keep us out of `slow_down` territory.
+         */
+        private const val MIN_MANUAL_POLL_SPACING_MS = 2_000L
+
+        /**
+         * Ceiling on the adaptive `pollingIntervalMs`. Without this cap,
+         * a run of `slow_down` responses could push the interval up by
+         * 5s each time, leaving the user waiting 30+ seconds for the
+         * app to notice their completed authorization.
+         */
+        private const val MAX_POLL_INTERVAL_MS = 15_000L
+
         private const val PAT_SETTINGS_URL = "https://github.com/settings/tokens/new"
 
         private val SAVED_STATE_KEYS =
