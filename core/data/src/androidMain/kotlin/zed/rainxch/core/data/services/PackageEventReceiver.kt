@@ -124,13 +124,44 @@ class PackageEventReceiver() :
             } else {
                 val systemInfo = monitor.getInstalledPackageInfo(packageName)
                 if (systemInfo != null) {
-                    repo.updateApp(
-                        app.copy(
-                            installedVersionName = systemInfo.versionName,
-                            installedVersionCode = systemInfo.versionCode,
-                        ),
-                    )
-                    Logger.d { "Updated version info via broadcast: $packageName (v${systemInfo.versionName})" }
+                    val versionChanged =
+                        systemInfo.versionCode != app.installedVersionCode ||
+                            systemInfo.versionName != app.installedVersionName
+                    if (versionChanged) {
+                        // External version change (sideload, browser
+                        // download, Play Store update on a tracked app,
+                        // etc.). Mirror `SyncInstalledAppsUseCase.toSyncVersions`:
+                        // refresh all four version fields *and*
+                        // recompute `isUpdateAvailable`, otherwise the
+                        // Apps row keeps shouting "update available" for
+                        // a version the user already has
+                        // (GitHub-Store#378).
+                        val latestVersionCode = app.latestVersionCode ?: 0L
+                        val stillHasUpdate =
+                            latestVersionCode > 0L &&
+                                latestVersionCode > systemInfo.versionCode
+                        repo.updateApp(
+                            app.copy(
+                                installedVersion = systemInfo.versionName,
+                                installedVersionName = systemInfo.versionName,
+                                installedVersionCode = systemInfo.versionCode,
+                                isUpdateAvailable = stillHasUpdate,
+                            ),
+                        )
+                        Logger.i {
+                            "External version change via broadcast: $packageName " +
+                                "DB v${app.installedVersionName}(${app.installedVersionCode}) → " +
+                                "System v${systemInfo.versionName}(${systemInfo.versionCode}), " +
+                                "updateAvailable=$stillHasUpdate"
+                        }
+                    } else {
+                        // Same version — broadcast likely fired for a
+                        // reinstall with no version bump. Leave state as
+                        // the previous check found it.
+                        Logger.d {
+                            "Broadcast touch with no version change: $packageName (v${systemInfo.versionName})"
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {
