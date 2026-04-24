@@ -70,6 +70,29 @@ data class DetailsState(
     val pendingInstallFilePath: String? = null,
     val showUninstallConfirmation: Boolean = false,
     val attestationStatus: AttestationStatus = AttestationStatus.UNCHECKED,
+    /**
+     * Days since the most recent stable release when the project is
+     * actively shipping pre-releases on top of it. `null` means
+     * either healthy (recent stable) or no applicable signal
+     * (project has no stable releases at all). Set by the ViewModel
+     * from `latestStable.publishedAt` vs `Clock.now()` when releases
+     * load. See release UX #6.
+     */
+    val stalledStableSinceDays: Int? = null,
+    /**
+     * Concatenated release notes for every release newer than the
+     * user's `installedApp.installedVersion`, most-recent-first.
+     * Populated when the user is tracking the app and at least one
+     * newer release exists. Null when there's no installed version
+     * or no newer releases. See release UX #4.
+     */
+    val mergedChangelog: String? = null,
+    /**
+     * Release tag for the head of [mergedChangelog] (the version the
+     * user would jump from). Used to title the merged section as
+     * "What's changed since v1.2.3".
+     */
+    val mergedChangelogBaseTag: String? = null,
 ) {
     val filteredReleases: List<GithubRelease>
         get() =
@@ -78,6 +101,36 @@ data class DetailsState(
                 ReleaseCategory.PRE_RELEASE -> allReleases.filter { it.isEffectivelyPreRelease() }
                 ReleaseCategory.ALL -> allReleases
             }
+
+    /**
+     * Most recent non-pre-release release, or `null` when the
+     * project has no stable releases in the current window. Drives
+     * the "Switch to stable vX.Y.Z" rollback action.
+     */
+    val latestStableRelease: GithubRelease?
+        get() = allReleases.firstOrNull { !it.isEffectivelyPreRelease() }
+
+    /**
+     * True when the install button should expose a "switch to
+     * stable" rollback affordance: the user is tracking this app,
+     * is currently on a release that's effectively a pre-release,
+     * and a distinct stable release exists. The handler
+     * (`DetailsAction.SwitchToStable`) selects the stable release
+     * and invokes the normal install path.
+     */
+    val canSwitchToStable: Boolean
+        get() {
+            val app = installedApp ?: return false
+            val stable = latestStableRelease ?: return false
+            // Is the currently-installed release a pre-release?
+            val installedIsPreRelease =
+                allReleases.firstOrNull { it.tagName == app.installedVersion }
+                    ?.isEffectivelyPreRelease() == true
+            if (!installedIsPreRelease) return false
+            // Don't offer the button if the stable release IS the
+            // one the user has already (same tag string).
+            return stable.tagName != app.installedVersion
+        }
 
     /**
      * True when the currently-tracked app has a *parked* install file
