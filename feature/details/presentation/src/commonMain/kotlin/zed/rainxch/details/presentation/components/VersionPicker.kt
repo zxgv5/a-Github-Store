@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import zed.rainxch.core.domain.model.GithubRelease
+import zed.rainxch.core.domain.model.isEffectivelyPreRelease
 import zed.rainxch.details.presentation.DetailsAction
 import zed.rainxch.githubstore.core.presentation.res.Res
 import zed.rainxch.githubstore.core.presentation.res.latest_badge
@@ -220,7 +221,7 @@ private fun VersionListItem(
                         )
                     }
                 }
-                if (release.isPrerelease) {
+                if (release.isEffectivelyPreRelease()) {
                     Surface(
                         shape = RoundedCornerShape(4.dp),
                         color = MaterialTheme.colorScheme.tertiaryContainer,

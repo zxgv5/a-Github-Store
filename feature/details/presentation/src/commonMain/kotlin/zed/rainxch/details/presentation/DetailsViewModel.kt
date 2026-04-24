@@ -29,6 +29,7 @@ import zed.rainxch.core.domain.model.GithubRelease
 import zed.rainxch.core.domain.model.InstalledApp
 import zed.rainxch.core.domain.model.Platform
 import zed.rainxch.core.domain.model.RateLimitException
+import zed.rainxch.core.domain.model.isEffectivelyPreRelease
 import zed.rainxch.core.domain.network.Downloader
 import zed.rainxch.core.domain.repository.FavouritesRepository
 import zed.rainxch.core.domain.repository.InstalledAppsRepository
@@ -528,12 +529,12 @@ class DetailsViewModel(
                 // the category too so the UI doesn't end up with a category
                 // selected but no matching release.
                 val byPrevCategory = when (prevCategory) {
-                    ReleaseCategory.STABLE -> releases.firstOrNull { !it.isPrerelease }
-                    ReleaseCategory.PRE_RELEASE -> releases.firstOrNull { it.isPrerelease }
+                    ReleaseCategory.STABLE -> releases.firstOrNull { !it.isEffectivelyPreRelease() }
+                    ReleaseCategory.PRE_RELEASE -> releases.firstOrNull { it.isEffectivelyPreRelease() }
                     ReleaseCategory.ALL -> releases.firstOrNull()
                 }
                 val selected = byPrevCategory
-                    ?: releases.firstOrNull { !it.isPrerelease }
+                    ?: releases.firstOrNull { !it.isEffectivelyPreRelease() }
                     ?: releases.firstOrNull()
                 val resolvedCategory =
                     if (byPrevCategory != null) prevCategory else ReleaseCategory.STABLE
@@ -739,8 +740,8 @@ class DetailsViewModel(
         val newCategory = action.category
         val filtered =
             when (newCategory) {
-                ReleaseCategory.STABLE -> _state.value.allReleases.filter { !it.isPrerelease }
-                ReleaseCategory.PRE_RELEASE -> _state.value.allReleases.filter { it.isPrerelease }
+                ReleaseCategory.STABLE -> _state.value.allReleases.filter { !it.isEffectivelyPreRelease() }
+                ReleaseCategory.PRE_RELEASE -> _state.value.allReleases.filter { it.isEffectivelyPreRelease() }
                 ReleaseCategory.ALL -> _state.value.allReleases
             }
         val newSelected = filtered.firstOrNull()
@@ -2114,7 +2115,7 @@ class DetailsViewModel(
                 }
 
                 val selectedRelease =
-                    allReleases.firstOrNull { !it.isPrerelease }
+                    allReleases.firstOrNull { !it.isEffectivelyPreRelease() }
                         ?: allReleases.firstOrNull()
 
                 val (installable, primary) = recomputeAssetsForRelease(selectedRelease, installedApp)

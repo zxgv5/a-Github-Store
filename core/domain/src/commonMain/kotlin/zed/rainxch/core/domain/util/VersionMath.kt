@@ -177,4 +177,58 @@ object VersionMath {
     }
 
     private val DOTTED_DIGIT_PATTERN = Regex("""\d+(?:\.\d+)*(?:-[\w.]+)?""")
+
+    /**
+     * Heuristic: returns `true` when [tag] contains a well-known
+     * pre-release marker.
+     *
+     * Why this exists: the GitHub API exposes a `prerelease: bool`
+     * flag on every release, but **maintainers regularly forget to
+     * set it**. A release tagged `v2.0.0-rc.1` with `prerelease:
+     * false` is still semantically a pre-release, and surfacing it
+     * as a stable update to opted-out users is a silent foot-gun.
+     * `GithubRelease.isEffectivelyPreRelease()` combines the API flag
+     * with this tag heuristic so one is enough.
+     *
+     * Recognised markers (case-insensitive), preceded by `-`, `.`,
+     * or `_`, and followed by a separator, digit, or end-of-string:
+     *  - `alpha`, `beta`, `rc` — classic semver pre-release labels
+     *  - `preview`, `snapshot`, `canary`, `nightly` — CI / early builds
+     *  - `milestone` / `m\d+` — JetBrains-style milestone builds
+     *  - `ea` — early access (Oracle / JetBrains / vendor convention)
+     *  - `dev` — dev build shorthand
+     *  - `pre` — generic pre-release prefix when followed by digit or dot
+     *
+     * Intentionally **not** recognised (too ambiguous / too many
+     * false positives):
+     *  - `test` (`-test-build` is often a real release artefact)
+     *  - `a\d+` / `b\d+` alone (collides with `-arm64`, `-amd64`, etc.)
+     *  - `stable` / `release` (explicit non-markers)
+     *
+     * Examples that match:
+     *   `v1.2.3-beta`, `1.2.3-alpha.1`, `v2-rc.2`, `1.0.0-preview2`,
+     *   `2025.04-nightly`, `v1.0.0-canary.3`, `1.0-m5`,
+     *   `0.9.0-snapshot`, `7.0-ea`
+     *
+     * Examples that DO NOT match:
+     *   `v1.2.3`, `1.2.3-stable`, `v1.2.3-android`, `release-1.2.3`,
+     *   `v2.0-final`, `v1.0.0-test-3`
+     */
+    fun isPreReleaseTag(tag: String?): Boolean {
+        if (tag.isNullOrBlank()) return false
+        return PRE_RELEASE_MARKER_PATTERN.containsMatchIn(tag)
+    }
+
+    private val PRE_RELEASE_MARKER_PATTERN =
+        // `\b` word boundaries cleanly separate markers from the
+        // surrounding tag (so `alpha` matches `v1.0-alpha` but not
+        // `alphabet`). The trailing `\d*` allows shorthand suffixes
+        // like `rc1`, `beta2`, `preview3` without requiring a
+        // separator between the word and the number. Longer
+        // alternatives (`prerelease`) come before shorter prefixes
+        // (`pre`) so the regex engine finds the longest match.
+        Regex(
+            "\\b(alpha|beta|rc|preview|prerelease|snapshot|canary|nightly|milestone|ea|dev|pre|m\\d+)\\d*\\b",
+            RegexOption.IGNORE_CASE,
+        )
 }

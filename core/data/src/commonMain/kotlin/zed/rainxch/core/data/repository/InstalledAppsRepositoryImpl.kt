@@ -28,6 +28,7 @@ import zed.rainxch.core.domain.model.InstalledApp
 import zed.rainxch.core.domain.repository.InstalledAppsRepository
 import zed.rainxch.core.domain.repository.MatchingPreview
 import zed.rainxch.core.domain.system.Installer
+import zed.rainxch.core.domain.model.isEffectivelyPreRelease
 import zed.rainxch.core.domain.util.AssetFilter
 import zed.rainxch.core.domain.util.AssetVariant
 import zed.rainxch.core.domain.util.VersionMath
@@ -102,8 +103,17 @@ class InstalledAppsRepositoryImpl(
 
     /**
      * Fetches up to [RELEASE_WINDOW] releases for [owner]/[repo], filters
-     * out drafts, applies the pre-release flag, and returns them sorted by
-     * `publishedAt` descending. Empty list on failure (logged at error).
+     * out drafts, applies the pre-release policy, and returns them sorted
+     * by `publishedAt` descending. Empty list on failure (logged at error).
+     *
+     * Pre-release policy: a release is filtered out when
+     * `includePreReleases = false` AND either the GitHub `prerelease`
+     * flag is `true` OR the tag/name contains a recognised pre-release
+     * marker (see [GithubRelease.isEffectivelyPreRelease]). The tag
+     * heuristic catches the common maintainer mistake of tagging
+     * `v2.0.0-rc.1` with `prerelease: false`. Whenever the flag and
+     * heuristic disagree we emit a diagnostic so the drift is
+     * traceable in session logs.
      */
     private suspend fun fetchReleaseWindow(
         owner: String,
@@ -123,9 +133,23 @@ class InstalledAppsRepositoryImpl(
             releases
                 .asSequence()
                 .filter { it.draft != true }
-                .filter { includePreReleases || it.prerelease != true }
                 .sortedByDescending { it.publishedAt ?: it.createdAt ?: "" }
                 .map { it.toDomain() }
+                .onEach { release ->
+                    val flagSays = release.isPrerelease
+                    val tagSays =
+                        VersionMath.isPreReleaseTag(release.tagName) ||
+                            VersionMath.isPreReleaseTag(release.name)
+                    if (flagSays != tagSays) {
+                        Logger.w {
+                            "Pre-release flag/tag mismatch for $owner/$repo " +
+                                "release '${release.tagName}' (name='${release.name}'): " +
+                                "apiFlag=$flagSays, tagMarker=$tagSays — " +
+                                "treating as pre-release=${flagSays || tagSays}"
+                        }
+                    }
+                }
+                .filter { includePreReleases || !it.isEffectivelyPreRelease() }
                 .toList()
         } catch (e: CancellationException) {
             // Structured concurrency: cancellation must propagate. Never

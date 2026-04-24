@@ -6,6 +6,7 @@ import zed.rainxch.core.domain.model.GithubRepoSummary
 import zed.rainxch.core.domain.model.GithubUserProfile
 import zed.rainxch.core.domain.model.InstalledApp
 import zed.rainxch.core.domain.model.SystemArchitecture
+import zed.rainxch.core.domain.model.isEffectivelyPreRelease
 import zed.rainxch.details.domain.model.ReleaseCategory
 import zed.rainxch.details.domain.model.RepoStats
 import zed.rainxch.details.presentation.model.AttestationStatus
@@ -73,8 +74,8 @@ data class DetailsState(
     val filteredReleases: List<GithubRelease>
         get() =
             when (selectedReleaseCategory) {
-                ReleaseCategory.STABLE -> allReleases.filter { !it.isPrerelease }
-                ReleaseCategory.PRE_RELEASE -> allReleases.filter { it.isPrerelease }
+                ReleaseCategory.STABLE -> allReleases.filter { !it.isEffectivelyPreRelease() }
+                ReleaseCategory.PRE_RELEASE -> allReleases.filter { it.isEffectivelyPreRelease() }
                 ReleaseCategory.ALL -> allReleases
             }
 
