@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -46,9 +47,16 @@ class AndroidDownloadProgressNotifier(
     ) {
         if (!hasNotificationPermission()) return
 
+        // Encode the package in the Intent's data URI so PendingIntent
+        // identity (driven by Intent.filterEquals, which considers `data`
+        // but not extras) is uniquely per-package. Relying on
+        // packageName.hashCode() as requestCode alone risks a collision
+        // that would have FLAG_UPDATE_CURRENT overwrite another
+        // download's cancel extras.
         val cancelIntent =
             Intent(context, DownloadCancelReceiver::class.java).apply {
                 action = DownloadCancelReceiver.ACTION_CANCEL
+                data = Uri.parse("githubstore-cancel://$packageName")
                 setPackage(context.packageName)
                 putExtra(DownloadCancelReceiver.EXTRA_PACKAGE_NAME, packageName)
             }

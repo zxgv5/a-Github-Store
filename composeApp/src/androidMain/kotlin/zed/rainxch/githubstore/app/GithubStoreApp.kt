@@ -41,10 +41,7 @@ class GithubStoreApp : Application() {
     }
 
     private fun startDownloadNotificationObserver() {
-        // The observer translates orchestrator state into progress
-        // notifications (see #373). Kicked off here so it runs for the
-        // whole process lifetime — no ViewModel is involved.
-        get<DownloadNotificationObserver>().start(appScope)
+        get<DownloadNotificationObserver>().start(get<CoroutineScope>())
     }
 
     private fun createNotificationChannels() {

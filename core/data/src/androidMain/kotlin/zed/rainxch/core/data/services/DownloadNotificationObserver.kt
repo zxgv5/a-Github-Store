@@ -63,11 +63,26 @@ class DownloadNotificationObserver(
     private val lastNotifiedAt = mutableMapOf<String, Long>()
 
     fun start(scope: CoroutineScope) {
-        if (job != null) return
+        if (job?.isActive == true) return
         job =
             scope.launch {
-                orchestrator.downloads.collect { snapshot ->
-                    reconcile(snapshot)
+                try {
+                    orchestrator.downloads.collect { snapshot ->
+                        try {
+                            reconcile(snapshot)
+                        } catch (t: Throwable) {
+                            // Never let a NotificationManager hiccup
+                            // collapse the whole flow — progress
+                            // notifications are best-effort.
+                            Logger.w(t) { "DownloadNotificationObserver: reconcile failed, continuing" }
+                        }
+                    }
+                } finally {
+                    // Reset so a subsequent start() on this process
+                    // (e.g. after the caller's scope restarts) can
+                    // resubscribe instead of silently no-op'ing on the
+                    // `job?.isActive == true` guard.
+                    job = null
                 }
             }
     }
@@ -77,7 +92,7 @@ class DownloadNotificationObserver(
         // (e.g. dismissed after Completed, or cleared on Cancelled).
         val removed = lastStages.keys - snapshot.keys
         for (pkg in removed) {
-            notifier.clearProgress(pkg)
+            clearProgressSafely(pkg)
             lastStages.remove(pkg)
             lastNotifiedAt.remove(pkg)
         }
@@ -117,12 +132,20 @@ class DownloadNotificationObserver(
                 DownloadStage.Failed,
                 -> {
                     if (previous == DownloadStage.Queued || previous == DownloadStage.Downloading) {
-                        notifier.clearProgress(pkg)
+                        clearProgressSafely(pkg)
                         lastNotifiedAt.remove(pkg)
                     }
                 }
             }
             lastStages[pkg] = entry.stage
+        }
+    }
+
+    private fun clearProgressSafely(pkg: String) {
+        try {
+            notifier.clearProgress(pkg)
+        } catch (t: Throwable) {
+            Logger.w(t) { "DownloadNotificationObserver: clearProgress failed for $pkg" }
         }
     }
 
