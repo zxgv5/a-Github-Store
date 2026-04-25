@@ -70,8 +70,8 @@ fun ExternalImportRoot(
                     Text(
                         // TODO i18n: extract to strings.xml
                         text = "Import installed apps",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
                     )
                 },
                 navigationIcon = {

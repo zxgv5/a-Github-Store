@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,72 +46,69 @@ fun CandidateCard(
     onSearchSubmit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
+    Surface(
+        tonalElevation = 1.dp,
         shape = RoundedCornerShape(20.dp),
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Surface(
-            tonalElevation = 2.dp,
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surface,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .let { base ->
-                        if (!expanded) base.clickable { onExpand() } else base
-                    },
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                CandidateHeader(candidate = candidate)
-
-                if (!expanded) {
-                    PreselectedRow(suggestion = candidate.preselectedSuggestion)
-                } else {
-                    if (candidate.suggestions.isNotEmpty()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            candidate.suggestions.take(3).forEach { suggestion ->
-                                RepoCandidateRow(
-                                    suggestion = suggestion,
-                                    onPick = onPick,
-                                )
-                            }
-                        }
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .let { base ->
+                    if (!expanded) {
+                        base.clickable(
+                            onClickLabel = "Expand to see other matches",
+                            role = Role.Button,
+                        ) { onExpand() }
+                    } else {
+                        base
                     }
+                },
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            CandidateHeader(candidate = candidate)
 
-                    RepoSearchOverride(
-                        query = searchQuery,
-                        results = searchResults,
-                        isSearching = isSearching,
-                        searchError = searchError,
-                        onQueryChange = onSearchQueryChange,
-                        onSubmit = onSearchSubmit,
-                        onPick = onPick,
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        TextButton(onClick = onSkip) {
-                            // TODO i18n: extract to strings.xml
-                            Text("Skip")
-                        }
-                        IconButton(onClick = onCollapse) {
-                            Icon(
-                                imageVector = Icons.Default.KeyboardArrowUp,
-                                // TODO i18n: extract to strings.xml
-                                contentDescription = "Collapse card",
+            if (!expanded) {
+                PreselectedRow(suggestion = candidate.preselectedSuggestion)
+            } else {
+                if (candidate.suggestions.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        candidate.suggestions.take(3).forEach { suggestion ->
+                            RepoCandidateRow(
+                                suggestion = suggestion,
+                                onPick = onPick,
                             )
                         }
+                    }
+                }
+
+                RepoSearchOverride(
+                    query = searchQuery,
+                    results = searchResults,
+                    isSearching = isSearching,
+                    searchError = searchError,
+                    onQueryChange = onSearchQueryChange,
+                    onSubmit = onSearchSubmit,
+                    onPick = onPick,
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = onSkip) {
+                        // TODO i18n: extract to strings.xml
+                        Text("Skip")
+                    }
+                    IconButton(onClick = onCollapse) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowUp,
+                            // TODO i18n: extract to strings.xml
+                            contentDescription = "Collapse card",
+                        )
                     }
                 }
             }
@@ -139,7 +135,7 @@ private fun CandidateHeader(candidate: CandidateUi) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = candidate.appLabel,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -175,8 +171,20 @@ private fun InstallerChip(installerLabel: String) {
 
 @Composable
 private fun PreselectedRow(suggestion: RepoSuggestionUi?) {
+    val containerColor =
+        if (suggestion != null) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        }
+    val contentColor =
+        if (suggestion != null) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = containerColor,
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -185,7 +193,7 @@ private fun PreselectedRow(suggestion: RepoSuggestionUi?) {
                 // TODO i18n: extract to strings.xml
                 text = "Tap to find a repo",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = contentColor,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
             )
         } else {
@@ -194,7 +202,7 @@ private fun PreselectedRow(suggestion: RepoSuggestionUi?) {
                 // TODO i18n: extract to strings.xml
                 text = "We think this is ${suggestion.ownerSlashRepo} · $percent%",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = contentColor,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
             )
         }

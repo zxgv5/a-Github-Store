@@ -41,8 +41,8 @@ fun EmptyStateScreen(
                 Icon(
                     imageVector = Icons.Outlined.CheckCircle,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(72.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(64.dp),
                 )
                 Text(
                     // TODO i18n: extract to strings.xml

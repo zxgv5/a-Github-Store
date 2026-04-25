@@ -45,6 +45,12 @@ fun RepoSearchOverride(
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                isError = !searchError.isNullOrBlank(),
+                supportingText = {
+                    if (!searchError.isNullOrBlank()) {
+                        Text(text = searchError)
+                    }
+                },
                 placeholder = {
                     Text(
                         // TODO i18n: extract to strings.xml
@@ -74,14 +80,6 @@ fun RepoSearchOverride(
                     strokeWidth = 2.dp,
                 )
             }
-        }
-
-        if (!searchError.isNullOrBlank()) {
-            Text(
-                text = searchError,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-            )
         }
 
         if (results.isNotEmpty()) {

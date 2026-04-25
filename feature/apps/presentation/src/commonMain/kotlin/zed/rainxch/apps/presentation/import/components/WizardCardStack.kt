@@ -23,18 +23,26 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
 import zed.rainxch.apps.presentation.import.model.CandidateUi
 import zed.rainxch.apps.presentation.import.model.RepoSuggestionUi
+
+// TODO Week 3: read system reduced-motion preference and provide LocalReducedMotion
+val LocalReducedMotion = compositionLocalOf { false }
 
 @Composable
 fun WizardCardStack(
@@ -131,6 +139,7 @@ private fun ProgressChip(currentIndex: Int, total: Int) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
     ) {
         Text(
             // TODO i18n: extract to strings.xml
@@ -145,10 +154,10 @@ private fun ProgressChip(currentIndex: Int, total: Int) {
 
 @Composable
 private fun GhostedCard(card: CandidateUi, depth: Int) {
-    val (offsetDp, alpha, scale) =
+    val (offsetDp, scale, ghostColor) =
         when (depth) {
-            1 -> Triple(8.dp, 0.7f, 0.96f)
-            else -> Triple(16.dp, 0.5f, 0.92f)
+            1 -> Triple(8.dp, 0.96f, MaterialTheme.colorScheme.surfaceContainerHigh)
+            else -> Triple(16.dp, 0.92f, MaterialTheme.colorScheme.surfaceContainer)
         }
     Surface(
         modifier =
@@ -156,15 +165,13 @@ private fun GhostedCard(card: CandidateUi, depth: Int) {
                 .fillMaxWidth()
                 .padding(top = offsetDp)
                 .graphicsLayer {
-                    this.alpha = alpha
                     scaleX = scale
                     scaleY = scale
-                },
-        tonalElevation = 1.dp,
+                }
+                .semantics(mergeDescendants = true) { hideFromAccessibility() },
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
+        color = ghostColor,
     ) {
-        // Stub content: just the app label so the ghost reads as a card behind the front one.
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = card.appLabel,
@@ -199,8 +206,9 @@ private fun FrontCard(
     val offsetX = remember(cardKey) { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val swipeThreshold = parentWidthPx * 0.25f
+    val reducedMotion = LocalReducedMotion.current
+    val rotationFactor = if (reducedMotion) 0f else 1f
 
-    // Reset offset whenever a new card slides into the front position.
     LaunchedEffect(cardKey) {
         offsetX.snapTo(0f)
     }
@@ -216,7 +224,7 @@ private fun FrontCard(
                 .fillMaxWidth()
                 .graphicsLayer {
                     translationX = offsetX.value
-                    rotationZ = (offsetX.value / 60f).coerceIn(-12f, 12f)
+                    rotationZ = (offsetX.value / 60f * rotationFactor).coerceIn(-12f, 12f)
                 }
                 .draggable(
                     state = draggable,

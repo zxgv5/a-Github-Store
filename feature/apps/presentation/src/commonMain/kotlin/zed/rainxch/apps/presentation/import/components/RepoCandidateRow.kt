@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,11 +20,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import zed.rainxch.apps.presentation.import.model.RepoSuggestionUi
+import zed.rainxch.apps.presentation.import.model.SuggestionSource
 
 @Composable
 fun RepoCandidateRow(
@@ -34,8 +38,10 @@ fun RepoCandidateRow(
     val percent = (suggestion.confidence * 100).roundToInt().coerceIn(0, 100)
     val (chipBg, chipFg) =
         when {
+            suggestion.source == SuggestionSource.MANUAL ->
+                MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
             suggestion.confidence >= 0.85 ->
-                MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
+                MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
             suggestion.confidence >= 0.5 ->
                 MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
             else ->
@@ -46,6 +52,7 @@ fun RepoCandidateRow(
         modifier =
             modifier
                 .fillMaxWidth()
+                .heightIn(min = 48.dp)
                 .clickable { onPick(suggestion) }
                 .padding(vertical = 10.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -91,6 +98,10 @@ fun RepoCandidateRow(
         Surface(
             color = chipBg,
             shape = RoundedCornerShape(12.dp),
+            modifier =
+                Modifier.semantics {
+                    contentDescription = "Match confidence: $percent percent"
+                },
         ) {
             Text(
                 text = "$percent%",

@@ -32,9 +32,8 @@ fun ImportProposalBanner(
 ) {
     Surface(
         modifier = modifier,
-        tonalElevation = 2.dp,
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.secondaryContainer,
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -42,9 +41,8 @@ fun ImportProposalBanner(
         ) {
             Icon(
                 imageVector = Icons.Outlined.FileDownload,
-                // TODO i18n: extract to strings.xml
-                contentDescription = "Pending imports",
-                tint = MaterialTheme.colorScheme.primary,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.size(24.dp),
             )
 
@@ -59,13 +57,13 @@ fun ImportProposalBanner(
                     text = "Found $pendingCount apps from GitHub",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
                 Text(
                     // TODO i18n: extract to strings.xml
                     text = "Review them to track updates here.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
 
