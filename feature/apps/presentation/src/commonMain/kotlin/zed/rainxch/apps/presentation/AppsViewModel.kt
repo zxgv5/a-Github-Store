@@ -32,6 +32,7 @@ import zed.rainxch.core.domain.model.InstalledApp
 import zed.rainxch.core.domain.model.InstallerType
 import zed.rainxch.core.domain.model.RateLimitException
 import zed.rainxch.core.domain.network.Downloader
+import zed.rainxch.core.domain.repository.ExternalImportRepository
 import zed.rainxch.core.domain.repository.InstalledAppsRepository
 import zed.rainxch.core.domain.repository.TweaksRepository
 import zed.rainxch.core.domain.system.DownloadOrchestrator
@@ -58,6 +59,7 @@ class AppsViewModel(
     private val shareManager: ShareManager,
     private val tweaksRepository: TweaksRepository,
     private val downloadOrchestrator: DownloadOrchestrator,
+    private val externalImportRepository: ExternalImportRepository,
 ) : ViewModel() {
     companion object {
         private const val UPDATE_CHECK_COOLDOWN_MS = 30 * 60 * 1000L
@@ -78,6 +80,7 @@ class AppsViewModel(
                 if (!hasLoadedInitialData) {
                     loadApps()
                     observeLiquidGlassEnabled()
+                    observePendingExternalImports()
                     hasLoadedInitialData = true
                 }
             }.stateIn(
@@ -92,6 +95,19 @@ class AppsViewModel(
                 _state.update {
                     it.copy(
                         isLiquidGlassEnabled = enabled,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun observePendingExternalImports() {
+        viewModelScope.launch {
+            externalImportRepository.pendingCandidateCountFlow().collect { count ->
+                _state.update {
+                    it.copy(
+                        pendingExternalImportCount = count,
+                        showImportProposalBanner = count >= 3 && !it.isExternalImportInFlight,
                     )
                 }
             }
