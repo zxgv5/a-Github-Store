@@ -17,6 +17,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -32,6 +33,8 @@ import zed.rainxch.apps.presentation.import.components.ImportProgressScreen
 import zed.rainxch.apps.presentation.import.components.PermissionRationaleScreen
 import zed.rainxch.apps.presentation.import.components.WizardCardStack
 import zed.rainxch.apps.presentation.import.model.ImportPhase
+import zed.rainxch.apps.presentation.import.util.LocalReducedMotion
+import zed.rainxch.apps.presentation.import.util.rememberSystemReducedMotion
 import zed.rainxch.core.presentation.utils.ObserveAsEvents
 
 @Composable
@@ -63,6 +66,9 @@ fun ExternalImportRoot(
         }
     }
 
+    val reducedMotion = rememberSystemReducedMotion()
+
+    CompositionLocalProvider(LocalReducedMotion provides reducedMotion) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -180,5 +186,6 @@ fun ExternalImportRoot(
                 }
             }
         }
+    }
     }
 }

@@ -37,6 +37,7 @@ class ExternalImportViewModel(
     private var candidatesByPackage: Map<String, ExternalAppCandidate> = emptyMap()
     private var hasStarted = false
     private var scanJob: Job? = null
+    private var searchJob: Job? = null
 
     private val _state = MutableStateFlow(ExternalImportState())
     val state =
@@ -90,19 +91,13 @@ class ExternalImportViewModel(
             }
 
             is ExternalImportAction.OnSearchOverrideChanged -> {
+                // Explicit submit only: typing alone never fires a request,
+                // both because the existing UX expects an Enter/icon tap and
+                // to avoid hammering the rate-limited backend search.
                 _state.update { it.copy(searchOverrideQuery = action.query) }
             }
 
-            ExternalImportAction.OnSearchOverrideSubmit -> {
-                // TODO Week 3: wire to BackendApiClient.search
-                _state.update { it.copy(isSearching = true) }
-                _state.update {
-                    it.copy(
-                        isSearching = false,
-                        searchOverrideResults = persistentListOf(),
-                    )
-                }
-            }
+            ExternalImportAction.OnSearchOverrideSubmit -> submitSearchOverride()
 
             ExternalImportAction.OnUndoLast -> Unit
 
@@ -210,6 +205,55 @@ class ExternalImportViewModel(
             suggestions = suggestionsDomain.take(3).map { it.toUi() }.toImmutableList(),
             preselectedSuggestion = preselected,
         )
+    }
+
+    private fun submitSearchOverride() {
+        val query = _state.value.searchOverrideQuery.trim()
+        if (query.isEmpty()) {
+            searchJob?.cancel()
+            _state.update {
+                it.copy(
+                    isSearching = false,
+                    searchError = null,
+                    searchOverrideResults = persistentListOf(),
+                )
+            }
+            return
+        }
+
+        searchJob?.cancel()
+        _state.update { it.copy(isSearching = true, searchError = null) }
+        searchJob = viewModelScope.launch {
+            val result = runCatching { externalImportRepository.searchRepos(query) }
+                .getOrElse { e ->
+                    if (e is CancellationException) throw e
+                    Result.failure(e)
+                }
+
+            result.fold(
+                onSuccess = { suggestions ->
+                    _state.update {
+                        it.copy(
+                            isSearching = false,
+                            searchError = null,
+                            searchOverrideResults =
+                                suggestions.map { s -> s.toUi() }.toImmutableList(),
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    if (e is CancellationException) throw e
+                    logger.error("Search override failed for '$query': ${e.message}")
+                    _state.update {
+                        it.copy(
+                            isSearching = false,
+                            searchError = e.message ?: "Search failed",
+                            searchOverrideResults = persistentListOf(),
+                        )
+                    }
+                },
+            )
+        }
     }
 
     private fun skipCurrent(neverAsk: Boolean) {
