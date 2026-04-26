@@ -27,6 +27,7 @@ import zed.rainxch.core.domain.repository.ExternalImportRepository
 import zed.rainxch.core.domain.repository.TelemetryRepository
 import zed.rainxch.core.domain.system.ExternalAppCandidate
 import zed.rainxch.core.domain.system.ExternalAppScanner
+import zed.rainxch.core.domain.system.ExternalDecisionSnapshot
 import zed.rainxch.core.domain.system.ExternalLinkState
 import zed.rainxch.core.domain.system.ImportSummary
 import zed.rainxch.core.domain.system.RepoMatchResult
@@ -88,6 +89,14 @@ class ExternalImportRepositoryImpl(
             if (updated.state == ExternalLinkState.PENDING_REVIEW.name) pendingReview++
             externalLinkDao.upsert(updated)
         }
+
+        // Prune PENDING_REVIEW rows whose package is no longer on the device or
+        // is no longer eligible (filtered by classifier, e.g. SYSTEM/PLAY/OEM).
+        // Without this, the banner count drifts past the actual reviewable set
+        // and the wizard ends up showing far fewer cards than the banner promised.
+        val livePackages = candidates.map { it.packageName }.toSet()
+        runCatching { externalLinkDao.prunePendingReviewNotIn(livePackages) }
+            .onFailure { Logger.d { "prune pending failed: ${it.message}" } }
 
         val durationMs = nowMillis() - started
         runCatching {
@@ -340,6 +349,49 @@ class ExternalImportRepositoryImpl(
     override suspend fun unlink(packageName: String) {
         externalLinkDao.deleteByPackageName(packageName)
         candidateSnapshot.update { it - packageName }
+    }
+
+    override suspend fun snapshotDecision(packageName: String): ExternalDecisionSnapshot? {
+        val row = externalLinkDao.get(packageName) ?: return null
+        return ExternalDecisionSnapshot(
+            packageName = row.packageName,
+            state = runCatching { ExternalLinkState.valueOf(row.state) }.getOrNull(),
+            repoOwner = row.repoOwner,
+            repoName = row.repoName,
+            matchSource = row.matchSource,
+            matchConfidence = row.matchConfidence,
+            skipExpiresAt = row.skipExpiresAt,
+            hadInstalledAppRow = false,
+        )
+    }
+
+    override suspend fun restoreDecision(snapshot: ExternalDecisionSnapshot) {
+        val now = nowMillis()
+        val state = snapshot.state ?: ExternalLinkState.PENDING_REVIEW
+        val existing = externalLinkDao.get(snapshot.packageName)
+        externalLinkDao.upsert(
+            (existing ?: ExternalLinkEntity(
+                packageName = snapshot.packageName,
+                state = state.name,
+                repoOwner = snapshot.repoOwner,
+                repoName = snapshot.repoName,
+                matchSource = snapshot.matchSource,
+                matchConfidence = snapshot.matchConfidence,
+                signingFingerprint = null,
+                installerKind = null,
+                firstSeenAt = now,
+                lastReviewedAt = now,
+                skipExpiresAt = snapshot.skipExpiresAt,
+            )).copy(
+                state = state.name,
+                repoOwner = snapshot.repoOwner,
+                repoName = snapshot.repoName,
+                matchSource = snapshot.matchSource,
+                matchConfidence = snapshot.matchConfidence,
+                skipExpiresAt = snapshot.skipExpiresAt,
+                lastReviewedAt = now,
+            ),
+        )
     }
 
     override suspend fun rescanSinglePackage(packageName: String): RepoMatchResult? {

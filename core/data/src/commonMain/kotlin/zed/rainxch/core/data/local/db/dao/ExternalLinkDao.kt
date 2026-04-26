@@ -35,4 +35,7 @@ interface ExternalLinkDao {
 
     @Query("DELETE FROM external_links WHERE state = 'SKIPPED' AND skipExpiresAt < :now")
     suspend fun pruneExpiredSkips(now: Long)
+
+    @Query("DELETE FROM external_links WHERE state = 'PENDING_REVIEW' AND packageName NOT IN (:livePackages)")
+    suspend fun prunePendingReviewNotIn(livePackages: Set<String>)
 }

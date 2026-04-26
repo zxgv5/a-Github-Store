@@ -2,6 +2,7 @@ package zed.rainxch.core.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import zed.rainxch.core.domain.system.ExternalAppCandidate
+import zed.rainxch.core.domain.system.ExternalDecisionSnapshot
 import zed.rainxch.core.domain.system.ImportSummary
 import zed.rainxch.core.domain.system.RepoMatchResult
 import zed.rainxch.core.domain.system.ScanResult
@@ -34,6 +35,10 @@ interface ExternalImportRepository {
     )
 
     suspend fun unlink(packageName: String)
+
+    suspend fun snapshotDecision(packageName: String): ExternalDecisionSnapshot?
+
+    suspend fun restoreDecision(snapshot: ExternalDecisionSnapshot)
 
     suspend fun rescanSinglePackage(packageName: String): RepoMatchResult?
 
