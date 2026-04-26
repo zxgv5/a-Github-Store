@@ -23,6 +23,7 @@ import zed.rainxch.apps.presentation.import.model.SuggestionSource
 import zed.rainxch.core.domain.logging.GitHubStoreLogger
 import zed.rainxch.core.domain.model.DeviceApp
 import zed.rainxch.core.domain.repository.ExternalImportRepository
+import zed.rainxch.core.domain.repository.TelemetryRepository
 import zed.rainxch.core.domain.system.ExternalAppCandidate
 import zed.rainxch.core.domain.system.InstallerKind
 import zed.rainxch.core.domain.system.RepoMatchResult
@@ -32,6 +33,7 @@ import zed.rainxch.core.domain.system.RepoMatchSuggestion
 class ExternalImportViewModel(
     private val externalImportRepository: ExternalImportRepository,
     private val appsRepository: AppsRepository,
+    private val telemetry: TelemetryRepository,
     private val logger: GitHubStoreLogger,
 ) : ViewModel() {
     private var candidatesByPackage: Map<String, ExternalAppCandidate> = emptyMap()
@@ -64,15 +66,18 @@ class ExternalImportViewModel(
 
             ExternalImportAction.OnRequestPermission -> {
                 _state.update { it.copy(phase = ImportPhase.RequestingPermission) }
+                viewModelScope.launch { runCatching { telemetry.importPermissionRequested() } }
             }
 
             ExternalImportAction.OnPermissionGranted -> {
                 _state.update { it.copy(isPermissionDenied = false) }
+                emitPermissionOutcome(granted = true)
                 startScanIfIdle(force = true)
             }
 
             ExternalImportAction.OnPermissionDenied -> {
                 _state.update { it.copy(isPermissionDenied = true) }
+                emitPermissionOutcome(granted = false)
                 startScanIfIdle(force = true)
             }
 
@@ -223,6 +228,7 @@ class ExternalImportViewModel(
 
         searchJob?.cancel()
         _state.update { it.copy(isSearching = true, searchError = null) }
+        viewModelScope.launch { runCatching { telemetry.importSearchOverrideUsed() } }
         searchJob = viewModelScope.launch {
             val result = runCatching { externalImportRepository.searchRepos(query) }
                 .getOrElse { e ->
@@ -232,6 +238,9 @@ class ExternalImportViewModel(
 
             result.fold(
                 onSuccess = { suggestions ->
+                    if (suggestions.isEmpty()) {
+                        runCatching { telemetry.importSearchOverrideNoResults() }
+                    }
                     _state.update {
                         it.copy(
                             isSearching = false,
@@ -266,6 +275,12 @@ class ExternalImportViewModel(
             } catch (e: Exception) {
                 logger.error("Skip failed for ${current.packageName}: ${e.message}")
             }
+            runCatching {
+                telemetry.importSkipped(
+                    countBucket = "1-2",
+                    persisted = if (neverAsk) "forever" else "7day",
+                )
+            }
             advanceAfter { it.copy(skipped = it.skipped + 1) }
         }
     }
@@ -288,7 +303,21 @@ class ExternalImportViewModel(
                 _events.send(ExternalImportEvent.ShowError("Couldn't reach GitHub. Try again later."))
                 return@launch
             }
+            runCatching {
+                telemetry.importManuallyLinked(countBucket = "1-2", source = source)
+            }
             advanceAfter { it.copy(manuallyLinked = it.manuallyLinked + 1) }
+        }
+    }
+
+    private fun emitPermissionOutcome(granted: Boolean) {
+        viewModelScope.launch {
+            runCatching {
+                telemetry.importPermissionOutcome(
+                    granted = granted,
+                    sdkIntBucket = "unknown",
+                )
+            }
         }
     }
 

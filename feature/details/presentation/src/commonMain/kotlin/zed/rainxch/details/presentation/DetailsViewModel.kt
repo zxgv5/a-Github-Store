@@ -177,6 +177,7 @@ class DetailsViewModel(
                     externalImportRepository.unlink(packageName)
                     installedAppsRepository.deleteInstalledApp(packageName)
                 }
+                runCatching { telemetryRepository.importUnlinkedFromDetails() }
                 // TODO i18n: extract to strings.xml
                 _events.send(
                     DetailsEvent.OnMessage("Unlinked. We'll re-suggest a match next scan."),
