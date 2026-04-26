@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -104,14 +105,22 @@ class AppsViewModel(
 
     private fun observePendingExternalImports() {
         viewModelScope.launch {
-            externalImportRepository.pendingCandidateCountFlow().collect { count ->
-                _state.update {
-                    it.copy(
-                        pendingExternalImportCount = count,
-                        showImportProposalBanner = count >= BANNER_THRESHOLD && !it.isExternalImportInFlight,
-                    )
+            externalImportRepository.pendingCandidateCountFlow()
+                .combine(tweaksRepository.getExternalImportBannerDismissedAtCount()) { count, dismissedAt ->
+                    count to dismissedAt
                 }
-            }
+                .collect { (count, dismissedAt) ->
+                    // Banner re-shows only when the live count exceeds the count
+                    // captured at dismiss time. Without this, every DAO emission
+                    // (delta scan, package event) overrides the user's dismiss.
+                    val shouldShow = count >= BANNER_THRESHOLD && count > dismissedAt
+                    _state.update {
+                        it.copy(
+                            pendingExternalImportCount = count,
+                            showImportProposalBanner = shouldShow && !it.isExternalImportInFlight,
+                        )
+                    }
+                }
         }
     }
 
@@ -462,12 +471,21 @@ class AppsViewModel(
             AppsAction.OnImportProposalReview -> {
                 _state.update { it.copy(showImportProposalBanner = false) }
                 viewModelScope.launch {
+                    // Reviewing implies the user is acting on the current set,
+                    // so wipe the dismiss watermark — banner can re-show next
+                    // time as count comes back >0 (or stays >0 if any cards
+                    // remained un-decided).
+                    runCatching { tweaksRepository.setExternalImportBannerDismissedAtCount(0) }
                     _events.send(AppsEvent.NavigateToExternalImport)
                 }
             }
 
             AppsAction.OnImportProposalDismiss -> {
+                val current = _state.value.pendingExternalImportCount
                 _state.update { it.copy(showImportProposalBanner = false) }
+                viewModelScope.launch {
+                    runCatching { tweaksRepository.setExternalImportBannerDismissedAtCount(current) }
+                }
             }
         }
     }

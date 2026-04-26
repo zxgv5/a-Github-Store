@@ -62,14 +62,22 @@ class ExternalImportRepositoryImpl(
     override fun pendingCandidateCountFlow(): Flow<Int> = externalLinkDao.observePendingReviewCount()
 
     override suspend fun scheduleInitialScanIfNeeded() {
-        val alreadyScanned = preferences.data.first()[INITIAL_SCAN_COMPLETED_AT_KEY] != null
-        if (alreadyScanned) return
+        // Reconcile on every cold start. The scan itself is local-only
+        // (PackageManager + DAO writes), idempotent against MATCHED/SKIPPED
+        // rows, and prunes stale PENDING_REVIEW rows that no longer pass the
+        // current scanner filter. Without this, banner counts persist past
+        // app updates that tightened the filter — leading to "banner says 50
+        // apps but the wizard finds zero".
+        val firstLaunch = preferences.data.first()[INITIAL_SCAN_COMPLETED_AT_KEY] == null
         runCatching {
-            runCatching { telemetry.importScanStarted(trigger = "first_launch") }
-                .onFailure { Logger.d { "telemetry importScanStarted failed: ${it.message}" } }
+            if (firstLaunch) {
+                runCatching { telemetry.importScanStarted(trigger = "first_launch") }
+                    .onFailure { Logger.d { "telemetry importScanStarted failed: ${it.message}" } }
+            }
             runFullScan()
-        }.onSuccess { markInitialScanComplete() }
-            .onFailure { Logger.w(it) { "Initial external scan failed; will retry on next launch." } }
+        }.onSuccess {
+            if (firstLaunch) markInitialScanComplete()
+        }.onFailure { Logger.w(it) { "External scan failed; will retry on next launch." } }
     }
 
     override suspend fun runFullScan(): ScanResult {

@@ -94,4 +94,8 @@ interface TweaksRepository {
     fun getExternalMatchSearchEnabled(): Flow<Boolean>
 
     suspend fun setExternalMatchSearchEnabled(enabled: Boolean)
+
+    fun getExternalImportBannerDismissedAtCount(): Flow<Int>
+
+    suspend fun setExternalImportBannerDismissedAtCount(count: Int)
 }
