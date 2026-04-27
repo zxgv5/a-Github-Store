@@ -62,6 +62,11 @@ class ExternalImportViewModel(
     // auto-linked packages without round-tripping resolveMatches() (which
     // would issue another network call and could return different matches).
     private var lastResolvedMatches: List<RepoMatchResult> = emptyList()
+    // Mirror of autoLinkedPackages: per-package pre-link snapshot of whether an
+    // installed_apps row already existed. Bulk undo consults this to avoid
+    // wiping rows that pre-existed (e.g., the user had previously linked the
+    // app through some other path before auto-link added an entry to it).
+    private var autoLinkedHadInstalledRow: Map<String, Boolean> = emptyMap()
     private var hasStarted = false
     private var scanJob: Job? = null
     private var searchJob: Job? = null
@@ -395,13 +400,27 @@ class ExternalImportViewModel(
             }.getOrNull()
             val hadInstalledRow = installedAppsRepository.getAppByPackage(packageName) != null
 
-            try {
+            // Short-circuit on failure: don't remove the card, don't offer undo,
+            // don't fire telemetry — the DAO state is unchanged. Surface an error
+            // so the user knows the action didn't take effect.
+            val ok = try {
                 externalImportRepository.skipPackage(packageName, neverAsk = neverAsk)
+                true
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 logger.error("Skip failed for $packageName: ${e.message}")
+                false
             }
+            if (!ok) {
+                _events.send(
+                    ExternalImportEvent.ShowError(
+                        getString(Res.string.external_import_error_link_failed),
+                    ),
+                )
+                return@launch
+            }
+
             runCatching {
                 telemetry.importSkipped(
                     countBucket = "1-2",
@@ -552,6 +571,9 @@ class ExternalImportViewModel(
     private fun autoSummaryContinue() {
         val current = _state.value
         if (current.phase != ImportPhase.AutoImportSummary) return
+        // User accepted the auto-imports; the pre-link presence map is no
+        // longer needed and shouldn't leak into a subsequent wizard run.
+        autoLinkedHadInstalledRow = emptyMap()
         if (current.cards.isNotEmpty()) {
             _state.update { it.copy(phase = ImportPhase.AwaitingReview) }
         } else {
@@ -574,16 +596,24 @@ class ExternalImportViewModel(
             return
         }
 
+        // Snapshot the pre-link map locally so a concurrent reset can't race us.
+        val hadInstalledMap = autoLinkedHadInstalledRow
+
         viewModelScope.launch {
             // Roll each auto-linked package back to PENDING_REVIEW. Snapshot →
             // restoreDecision matches the per-row undo path, so the audit trail
             // and DAO state mirror what the user would see after a fresh scan
-            // with no auto-link applied.
+            // with no auto-link applied. installed_apps is only deleted for
+            // packages whose row did NOT pre-exist before auto-link — same
+            // policy as undoLast (PendingUndo.Kind.Link && !hadInstalledAppRowBefore).
             packages.forEach { pkg ->
                 val snapshot = runCatching {
                     externalImportRepository.snapshotDecision(pkg)
                 }.getOrNull()
-                runCatching { installedAppsRepository.deleteInstalledApp(pkg) }
+                val hadRowBefore = hadInstalledMap[pkg] == true
+                if (!hadRowBefore) {
+                    runCatching { installedAppsRepository.deleteInstalledApp(pkg) }
+                }
                 if (snapshot != null) {
                     runCatching { externalImportRepository.restoreDecision(snapshot) }
                 } else {
@@ -595,6 +625,7 @@ class ExternalImportViewModel(
             // the auto-link wave wholesale, so a stale "Undo" snackbar from a
             // pre-summary action would now point at a row we just restored.
             pendingUndo = null
+            autoLinkedHadInstalledRow = emptyMap()
 
             val matchesByPkg = lastResolvedMatches.associateBy { it.packageName }
             val restoredCards = packages.mapNotNull { pkg ->
@@ -699,10 +730,18 @@ class ExternalImportViewModel(
 
     private suspend fun autoMaterialize(matches: List<RepoMatchResult>): List<String> {
         val linked = mutableListOf<String>()
+        val hadInstalledRow = mutableMapOf<String, Boolean>()
         matches.forEach { result ->
             val top = result.topSuggestion ?: return@forEach
             if (top.confidence < AUTO_LINK_THRESHOLD) return@forEach
             val candidate = candidatesByPackage[result.packageName] ?: return@forEach
+
+            // Capture pre-link installed_apps presence BEFORE materializeAndMark
+            // writes the row. autoSummaryUndoAll reads this to decide whether to
+            // delete the row on undo or leave it (because it pre-existed).
+            val pre = runCatching {
+                installedAppsRepository.getAppByPackage(result.packageName) != null
+            }.getOrDefault(false)
 
             val ok =
                 materializeAndMark(
@@ -711,8 +750,12 @@ class ExternalImportViewModel(
                     repo = top.repo,
                     source = "auto-${top.source.name.lowercase()}",
                 )
-            if (ok) linked += result.packageName
+            if (ok) {
+                linked += result.packageName
+                hadInstalledRow[result.packageName] = pre
+            }
         }
+        autoLinkedHadInstalledRow = hadInstalledRow.toMap()
         return linked
     }
 
@@ -828,14 +871,23 @@ class ExternalImportViewModel(
         )
 
     private suspend fun InstallerKind.toUiLabel(): String =
+        // Exhaustive: STORE_PLAY / STORE_AURORA / STORE_GALAXY / STORE_OEM_OTHER /
+        // SYSTEM are filtered out at the scanner today, but the wizard's enum
+        // contract is shared with the scanner — handle every value explicitly so
+        // a future scanner change can't silently mislabel a candidate.
         when (this) {
             InstallerKind.STORE_OBTAINIUM -> getString(Res.string.external_import_installer_obtainium)
             InstallerKind.STORE_FDROID -> getString(Res.string.external_import_installer_fdroid)
             InstallerKind.BROWSER -> getString(Res.string.external_import_installer_browser)
             InstallerKind.SIDELOAD -> getString(Res.string.external_import_installer_sideload)
             InstallerKind.GITHUB_STORE_SELF -> getString(Res.string.external_import_installer_self)
-            InstallerKind.UNKNOWN -> getString(Res.string.external_import_installer_unknown)
-            else -> getString(Res.string.external_import_installer_unknown)
+            InstallerKind.UNKNOWN,
+            InstallerKind.STORE_PLAY,
+            InstallerKind.STORE_AURORA,
+            InstallerKind.STORE_GALAXY,
+            InstallerKind.STORE_OEM_OTHER,
+            InstallerKind.SYSTEM,
+            -> getString(Res.string.external_import_installer_unknown)
         }
 
     private data class PendingUndo(
