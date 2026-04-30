@@ -62,12 +62,13 @@ class MirrorRepositoryImpl(
             .fetchList()
             .onSuccess { response ->
                 val configs = response.mirrors.map { it.toDomain() }
+                val previousCatalog = _catalog.value
                 _catalog.value = configs
                 preferences.edit { prefs ->
                     prefs[MirrorPersistence.CACHED_MIRROR_LIST_JSON_KEY] = json.encodeToString(MirrorListResponse.serializer(), response)
                     prefs[MirrorPersistence.CACHED_MIRROR_LIST_AT_KEY] = Clock.System.now().toEpochMilliseconds()
                 }
-                checkSelectedMirrorStillExists(configs)
+                checkSelectedMirrorStillExists(fresh = configs, previous = previousCatalog)
             }.map { }
 
     override fun observePreference(): Flow<MirrorPreference> =
@@ -128,14 +129,15 @@ class MirrorRepositoryImpl(
         }
     }
 
-    private suspend fun checkSelectedMirrorStillExists(fresh: List<MirrorConfig>) {
+    private suspend fun checkSelectedMirrorStillExists(
+        fresh: List<MirrorConfig>,
+        previous: List<MirrorConfig>,
+    ) {
         val pref = observePreference().first()
         if (pref !is MirrorPreference.Selected) return
         val match = fresh.firstOrNull { it.id == pref.id }
         if (match == null) {
-            // Find the previous name from the cache for the toast message
-            val previousName =
-                _catalog.value.firstOrNull { it.id == pref.id }?.name ?: pref.id
+            val previousName = previous.firstOrNull { it.id == pref.id }?.name ?: pref.id
             setPreference(MirrorPreference.Direct)
             _removedNotices.tryEmit(MirrorRemoved(displayName = previousName))
         }
