@@ -310,7 +310,9 @@ fun AppNavigation(
                 composable<GithubStoreGraph.TweaksScreen> {
                     TweaksRoot(
                         onNavigateToMirrorPicker = {
-                            navController.navigate(GithubStoreGraph.MirrorPickerScreen)
+                            navController.navigate(GithubStoreGraph.MirrorPickerScreen) {
+                                launchSingleTop = true
+                            }
                         },
                     )
                 }
@@ -413,7 +415,9 @@ fun AppNavigation(
                     onDismiss = autoSuggestVm::dismiss,
                     onPickOne = {
                         autoSuggestVm.onPickOneClicked()
-                        navController.navigate(GithubStoreGraph.MirrorPickerScreen)
+                        navController.navigate(GithubStoreGraph.MirrorPickerScreen) {
+                            launchSingleTop = true
+                        }
                     },
                     onMaybeLater = autoSuggestVm::onMaybeLater,
                     onDontAskAgain = autoSuggestVm::onDontAskAgain,
