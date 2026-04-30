@@ -786,7 +786,7 @@
     <string name="external_import_card_action_more">अधिक मेल</string>
     <string name="external_import_card_action_less">मेल छुपाएं</string>
     <string name="external_import_card_installer_chip">%1$s के ज़रिए इंस्टॉल</string>
-    <string name="external_import_card_preselect_known">हमें लगता है यह %1$s है · %2$d%%</string>
+    <string name="external_import_card_preselect_known">हमें लगता है यह %1$s है · %2$d</string>
     <string name="external_import_card_preselect_unknown">रिपो खोजने के लिए टैप करें</string>
     <string name="external_import_card_expand_label">अन्य मेल देखने के लिए विस्तार करें</string>
     <string name="external_import_card_collapse_label">कार्ड संकुचित करें</string>
@@ -819,7 +819,7 @@
     <string name="external_import_proposal_banner_review">समीक्षा करें</string>
     <string name="external_import_proposal_banner_dismiss">हटाएं</string>
     <string name="external_import_match_confidence_a11y">मिलान विश्वास: %1$d प्रतिशत</string>
-    <string name="external_import_match_confidence_chip">%1$d%%</string>
+    <string name="external_import_match_confidence_chip">%1$d</string>
     <string name="external_import_error_link_failed">इस ऐप को लिंक नहीं किया जा सका — फिर कोशिश करें।</string>
     <string name="external_import_error_link_network">GitHub तक नहीं पहुंचा जा सका। बाद में फिर कोशिश करें।</string>
     <string name="external_import_error_scan_failed_default">स्कैन विफल</string>

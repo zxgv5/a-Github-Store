@@ -784,7 +784,7 @@
     <string name="external_import_card_action_more">Daha fazla eşleşme</string>
     <string name="external_import_card_action_less">Eşleşmeleri gizle</string>
     <string name="external_import_card_installer_chip">%1$s aracılığıyla yüklendi</string>
-    <string name="external_import_card_preselect_known">Bunun %1$s olduğunu düşünüyoruz · %2$d%%</string>
+    <string name="external_import_card_preselect_known">Bunun %1$s olduğunu düşünüyoruz · %2$d</string>
     <string name="external_import_card_preselect_unknown">Depo bulmak için dokun</string>
     <string name="external_import_card_expand_label">Diğer eşleşmeleri görmek için genişlet</string>
     <string name="external_import_card_collapse_label">Kartı daralt</string>
@@ -817,7 +817,7 @@
     <string name="external_import_proposal_banner_review">İncele</string>
     <string name="external_import_proposal_banner_dismiss">Kapat</string>
     <string name="external_import_match_confidence_a11y">Eşleşme güveni: yüzde %1$d</string>
-    <string name="external_import_match_confidence_chip">%1$d%%</string>
+    <string name="external_import_match_confidence_chip">%1$d</string>
     <string name="external_import_error_link_failed">Bu uygulama bağlanamadı — tekrar deneyin.</string>
     <string name="external_import_error_link_network">GitHub'a ulaşılamadı. Daha sonra tekrar deneyin.</string>
     <string name="external_import_error_scan_failed_default">Tarama başarısız</string>

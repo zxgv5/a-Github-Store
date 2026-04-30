@@ -758,7 +758,7 @@
     <string name="external_import_card_action_more">Другие совпадения</string>
     <string name="external_import_card_action_less">Скрыть совпадения</string>
     <string name="external_import_card_installer_chip">Установлено через %1$s</string>
-    <string name="external_import_card_preselect_known">Мы думаем, это %1$s · %2$d%%</string>
+    <string name="external_import_card_preselect_known">Мы думаем, это %1$s · %2$d</string>
     <string name="external_import_card_preselect_unknown">Нажмите, чтобы найти репозиторий</string>
     <string name="external_import_card_expand_label">Развернуть для просмотра других совпадений</string>
     <string name="external_import_card_collapse_label">Свернуть карточку</string>
@@ -795,7 +795,7 @@
     <string name="external_import_proposal_banner_review">Просмотреть</string>
     <string name="external_import_proposal_banner_dismiss">Закрыть</string>
     <string name="external_import_match_confidence_a11y">Достоверность совпадения: %1$d процентов</string>
-    <string name="external_import_match_confidence_chip">%1$d%%</string>
+    <string name="external_import_match_confidence_chip">%1$d</string>
     <string name="external_import_error_link_failed">Не удалось связать это приложение — попробуйте ещё раз.</string>
     <string name="external_import_error_link_network">Не удалось подключиться к GitHub. Попробуйте позже.</string>
     <string name="external_import_error_scan_failed_default">Ошибка сканирования</string>

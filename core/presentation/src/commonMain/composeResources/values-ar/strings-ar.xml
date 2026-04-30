@@ -785,7 +785,7 @@
     <string name="external_import_card_action_more">المزيد من التطابقات</string>
     <string name="external_import_card_action_less">إخفاء التطابقات</string>
     <string name="external_import_card_installer_chip">مثبّت عبر %1$s</string>
-    <string name="external_import_card_preselect_known">نعتقد أن هذا هو %1$s · %2$d%%</string>
+    <string name="external_import_card_preselect_known">نعتقد أن هذا هو %1$s · %2$d</string>
     <string name="external_import_card_preselect_unknown">اضغط للبحث عن مستودع</string>
     <string name="external_import_card_expand_label">توسيع لرؤية تطابقات أخرى</string>
     <string name="external_import_card_collapse_label">طي البطاقة</string>
@@ -826,7 +826,7 @@
     <string name="external_import_proposal_banner_review">مراجعة</string>
     <string name="external_import_proposal_banner_dismiss">تجاهل</string>
     <string name="external_import_match_confidence_a11y">درجة ثقة التطابق: %1$d بالمئة</string>
-    <string name="external_import_match_confidence_chip">%1$d%%</string>
+    <string name="external_import_match_confidence_chip">%1$d</string>
     <string name="external_import_error_link_failed">تعذّر ربط هذا التطبيق — حاول مجدداً.</string>
     <string name="external_import_error_link_network">تعذّر الوصول إلى GitHub. حاول مجدداً لاحقاً.</string>
     <string name="external_import_error_scan_failed_default">فشل الفحص</string>

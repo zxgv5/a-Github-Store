@@ -749,7 +749,7 @@
     <string name="external_import_card_action_more">更多匹配</string>
     <string name="external_import_card_action_less">隐藏匹配</string>
     <string name="external_import_card_installer_chip">通过 %1$s 安装</string>
-    <string name="external_import_card_preselect_known">我们认为这是 %1$s · %2$d%%</string>
+    <string name="external_import_card_preselect_known">我们认为这是 %1$s · %2$d</string>
     <string name="external_import_card_preselect_unknown">点击查找仓库</string>
     <string name="external_import_card_expand_label">展开以查看其他匹配</string>
     <string name="external_import_card_collapse_label">收起卡片</string>
@@ -779,8 +779,8 @@
     <string name="external_import_proposal_banner_body">审阅它们以在此追踪更新。</string>
     <string name="external_import_proposal_banner_review">审阅</string>
     <string name="external_import_proposal_banner_dismiss">关闭</string>
-    <string name="external_import_match_confidence_a11y">匹配置信度：%1$d%%</string>
-    <string name="external_import_match_confidence_chip">%1$d%%</string>
+    <string name="external_import_match_confidence_a11y">匹配置信度：%1$d 百分比</string>
+    <string name="external_import_match_confidence_chip">%1$d</string>
     <string name="external_import_error_link_failed">无法关联此应用 — 请重试。</string>
     <string name="external_import_error_link_network">无法连接到 GitHub，请稍后重试。</string>
     <string name="external_import_error_scan_failed_default">扫描失败</string>

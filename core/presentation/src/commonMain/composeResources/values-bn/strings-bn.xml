@@ -781,7 +781,7 @@
     <string name="external_import_card_action_more">আরও মিল</string>
     <string name="external_import_card_action_less">মিল লুকান</string>
     <string name="external_import_card_installer_chip">%1$s দিয়ে ইনস্টল করা</string>
-    <string name="external_import_card_preselect_known">আমরা মনে করি এটি %1$s · %2$d%%</string>
+    <string name="external_import_card_preselect_known">আমরা মনে করি এটি %1$s · %2$d</string>
     <string name="external_import_card_preselect_unknown">রিপো খুঁজতে ট্যাপ করুন</string>
     <string name="external_import_card_expand_label">অন্য মিল দেখতে প্রসারিত করুন</string>
     <string name="external_import_card_collapse_label">কার্ড সংকুচিত করুন</string>
@@ -814,7 +814,7 @@
     <string name="external_import_proposal_banner_review">পর্যালোচনা</string>
     <string name="external_import_proposal_banner_dismiss">খারিজ করুন</string>
     <string name="external_import_match_confidence_a11y">মিলের আত্মবিশ্বাস: %1$d শতাংশ</string>
-    <string name="external_import_match_confidence_chip">%1$d%%</string>
+    <string name="external_import_match_confidence_chip">%1$d</string>
     <string name="external_import_error_link_failed">এই অ্যাপ লিঙ্ক করা যায়নি — আবার চেষ্টা করুন।</string>
     <string name="external_import_error_link_network">GitHub-এ পৌঁছানো যায়নি। পরে আবার চেষ্টা করুন।</string>
     <string name="external_import_error_scan_failed_default">স্ক্যান ব্যর্থ হয়েছে</string>

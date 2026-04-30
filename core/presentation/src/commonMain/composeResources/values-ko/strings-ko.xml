@@ -782,7 +782,7 @@
     <string name="external_import_card_action_more">더 많은 일치 항목</string>
     <string name="external_import_card_action_less">일치 항목 숨기기</string>
     <string name="external_import_card_installer_chip">%1$s를 통해 설치됨</string>
-    <string name="external_import_card_preselect_known">%1$s(으)로 추정됩니다 · %2$d%%</string>
+    <string name="external_import_card_preselect_known">%1$s(으)로 추정됩니다 · %2$d</string>
     <string name="external_import_card_preselect_unknown">저장소를 찾으려면 탭하세요</string>
     <string name="external_import_card_expand_label">다른 일치 항목을 보려면 펼치기</string>
     <string name="external_import_card_collapse_label">카드 접기</string>
@@ -813,7 +813,7 @@
     <string name="external_import_proposal_banner_review">검토</string>
     <string name="external_import_proposal_banner_dismiss">닫기</string>
     <string name="external_import_match_confidence_a11y">일치 신뢰도: %1$d퍼센트</string>
-    <string name="external_import_match_confidence_chip">%1$d%%</string>
+    <string name="external_import_match_confidence_chip">%1$d</string>
     <string name="external_import_error_link_failed">이 앱을 연결할 수 없습니다 — 다시 시도하세요.</string>
     <string name="external_import_error_link_network">GitHub에 연결할 수 없습니다. 나중에 다시 시도하세요.</string>
     <string name="external_import_error_scan_failed_default">스캔 실패</string>

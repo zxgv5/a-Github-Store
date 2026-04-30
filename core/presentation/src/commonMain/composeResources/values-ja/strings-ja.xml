@@ -747,7 +747,7 @@
     <string name="external_import_card_action_more">他の一致を表示</string>
     <string name="external_import_card_action_less">一致を非表示</string>
     <string name="external_import_card_installer_chip">%1$s 経由でインストール</string>
-    <string name="external_import_card_preselect_known">おそらく %1$s です · %2$d%%</string>
+    <string name="external_import_card_preselect_known">おそらく %1$s です · %2$d</string>
     <string name="external_import_card_preselect_unknown">リポジトリを検索するにはタップ</string>
     <string name="external_import_card_expand_label">展開して他の一致を表示</string>
     <string name="external_import_card_collapse_label">カードを折りたたむ</string>
@@ -778,7 +778,7 @@
     <string name="external_import_proposal_banner_review">確認</string>
     <string name="external_import_proposal_banner_dismiss">閉じる</string>
     <string name="external_import_match_confidence_a11y">一致の信頼度: %1$d パーセント</string>
-    <string name="external_import_match_confidence_chip">%1$d%%</string>
+    <string name="external_import_match_confidence_chip">%1$d</string>
     <string name="external_import_error_link_failed">このアプリをリンクできませんでした — もう一度お試しください。</string>
     <string name="external_import_error_link_network">GitHub に接続できませんでした。後でもう一度お試しください。</string>
     <string name="external_import_error_scan_failed_default">スキャンに失敗しました</string>

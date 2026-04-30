@@ -758,7 +758,7 @@
     <string name="external_import_card_action_more">Więcej dopasowań</string>
     <string name="external_import_card_action_less">Ukryj dopasowania</string>
     <string name="external_import_card_installer_chip">Zainstalowano przez %1$s</string>
-    <string name="external_import_card_preselect_known">Uważamy, że to %1$s · %2$d%%</string>
+    <string name="external_import_card_preselect_known">Uważamy, że to %1$s · %2$d</string>
     <string name="external_import_card_preselect_unknown">Dotknij, aby znaleźć repozytorium</string>
     <string name="external_import_card_expand_label">Rozwiń, aby zobaczyć inne dopasowania</string>
     <string name="external_import_card_collapse_label">Zwiń kartę</string>
@@ -795,7 +795,7 @@
     <string name="external_import_proposal_banner_review">Przejrzyj</string>
     <string name="external_import_proposal_banner_dismiss">Odrzuć</string>
     <string name="external_import_match_confidence_a11y">Pewność dopasowania: %1$d procent</string>
-    <string name="external_import_match_confidence_chip">%1$d%%</string>
+    <string name="external_import_match_confidence_chip">%1$d</string>
     <string name="external_import_error_link_failed">Nie udało się połączyć tej aplikacji — spróbuj ponownie.</string>
     <string name="external_import_error_link_network">Nie można było połączyć się z GitHub. Spróbuj ponownie później.</string>
     <string name="external_import_error_scan_failed_default">Skanowanie nie powiodło się</string>
