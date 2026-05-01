@@ -68,6 +68,7 @@ jobs:
           path: |
             composeApp/build/compose/binaries/main/exe/*.exe
             composeApp/build/compose/binaries/main/msi/*.msi
+          if-no-files-found: error
           retention-days: 30
           compression-level: 6
 
@@ -127,6 +128,7 @@ jobs:
           path: |
             composeApp/build/compose/binaries/main/dmg/*.dmg
             composeApp/build/compose/binaries/main/pkg/*.pkg
+          if-no-files-found: error
           retention-days: 30
           compression-level: 6
 
@@ -296,6 +298,7 @@ jobs:
           path: |
             composeApp/build/compose/binaries/main/deb/*.deb
             composeApp/build/compose/binaries/main/rpm/*.rpm
+          if-no-files-found: error
           retention-days: 30
           compression-level: 6
 
