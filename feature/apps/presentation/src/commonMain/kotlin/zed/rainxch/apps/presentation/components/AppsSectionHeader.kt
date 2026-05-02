@@ -31,6 +31,10 @@ import zed.rainxch.githubstore.core.presentation.res.Res
 import zed.rainxch.githubstore.core.presentation.res.apps_section_collapse
 import zed.rainxch.githubstore.core.presentation.res.apps_section_count_suffix
 import zed.rainxch.githubstore.core.presentation.res.apps_section_expand
+import zed.rainxch.githubstore.core.presentation.res.apps_section_header_a11y_collapsible
+import zed.rainxch.githubstore.core.presentation.res.apps_section_header_a11y_static
+import zed.rainxch.githubstore.core.presentation.res.apps_section_state_collapsed
+import zed.rainxch.githubstore.core.presentation.res.apps_section_state_expanded
 
 /**
  * Section header shown above each grouped app list. Honours WCAG: the row
@@ -58,7 +62,13 @@ fun AppsSectionHeader(
         label = "section-chevron",
     )
 
-    val rowSemantic = if (isExpanded) collapseLabel else expandLabel
+    val toggleHint = if (isExpanded) collapseLabel else expandLabel
+    val collapsibleHeaderLabel =
+        stringResource(Res.string.apps_section_header_a11y_collapsible, title, count, toggleHint)
+    val staticHeaderLabel =
+        stringResource(Res.string.apps_section_header_a11y_static, title, count)
+    val expandedStateLabel = stringResource(Res.string.apps_section_state_expanded)
+    val collapsedStateLabel = stringResource(Res.string.apps_section_state_collapsed)
 
     Row(
         modifier =
@@ -73,13 +83,14 @@ fun AppsSectionHeader(
                             .semantics(mergeDescendants = true) {
                                 role = Role.Button
                                 heading()
-                                contentDescription = "$title, $count, $rowSemantic"
-                                stateDescription = if (isExpanded) "expanded" else "collapsed"
+                                contentDescription = collapsibleHeaderLabel
+                                stateDescription =
+                                    if (isExpanded) expandedStateLabel else collapsedStateLabel
                             }
                     } else {
                         base.semantics(mergeDescendants = true) {
                             heading()
-                            contentDescription = "$title, $count"
+                            contentDescription = staticHeaderLabel
                         }
                     }
                 },

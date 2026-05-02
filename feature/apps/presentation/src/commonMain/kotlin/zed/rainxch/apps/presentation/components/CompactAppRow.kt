@@ -91,8 +91,13 @@ fun CompactAppRow(
     modifier: Modifier = Modifier,
 ) {
     val app = appItem.installedApp
+    // A row is "busy" only when something is actively running in the
+    // background. A parked download (`pendingInstallFilePath != null`)
+    // sets `isPendingInstall = true` but the user can still tap Install,
+    // so it must NOT be treated as busy — otherwise the Install CTA and
+    // overflow menu get stuck disabled.
     val isBusy =
-        app.isPendingInstall ||
+        (app.isPendingInstall && app.pendingInstallFilePath == null) ||
             appItem.updateState is UpdateState.Downloading ||
             appItem.updateState is UpdateState.Installing ||
             appItem.updateState is UpdateState.CheckingUpdate
