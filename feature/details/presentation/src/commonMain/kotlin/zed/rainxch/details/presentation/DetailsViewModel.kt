@@ -27,6 +27,7 @@ import zed.rainxch.core.domain.model.FavoriteRepo
 import zed.rainxch.core.domain.model.GithubAsset
 import zed.rainxch.core.domain.model.GithubRelease
 import zed.rainxch.core.domain.model.InstalledApp
+import zed.rainxch.core.domain.model.isReallyInstalled
 import zed.rainxch.core.domain.model.Platform
 import zed.rainxch.core.domain.model.RateLimitException
 import zed.rainxch.core.domain.model.isEffectivelyPreRelease
@@ -792,11 +793,32 @@ class DetailsViewModel(
         }
     }
 
+    /**
+     * One-shot eligibility check for the APK Inspect coachmark. The
+     * coachmark may *only* fire if the user opened this Details screen
+     * with the app already genuinely installed — never as a side effect
+     * of an install completing during the current session. Otherwise
+     * the pulse would render at the exact moment the system install
+     * prompt is up, which is the user's peak-attention frame.
+     */
     private fun observeApkInspectCoachmark() {
         viewModelScope.launch {
-            tweaksRepository.getApkInspectCoachmarkShown().collect { shown ->
-                _state.update { it.copy(isApkInspectCoachmarkPending = !shown) }
-            }
+            val alreadyShown =
+                runCatching { tweaksRepository.getApkInspectCoachmarkShown().first() }
+                    .getOrDefault(true)
+            if (alreadyShown) return@launch
+            // Wait for `loadInitial` to settle. The first non-loading
+            // emission carries the authoritative `installedApp` for the
+            // app the user is viewing. If it's null (or pending) at
+            // that frame, this screen instance is not eligible — we
+            // never enable the coachmark for the rest of the session,
+            // even if an install completes here. The user will see it
+            // on their next visit instead.
+            val firstStable = _state.first { !it.isLoading }
+            val installedAtOpen =
+                firstStable.installedApp?.isReallyInstalled() == true
+            if (!installedAtOpen) return@launch
+            _state.update { it.copy(isApkInspectCoachmarkPending = true) }
         }
     }
 
