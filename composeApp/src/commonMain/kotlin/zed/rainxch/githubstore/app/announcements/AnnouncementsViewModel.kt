@@ -87,6 +87,22 @@ class AnnouncementsViewModel(
         }
     }
 
+    fun markRoutineItemsSeen() {
+        viewModelScope.launch {
+            try {
+                val snapshot = feed.value
+                snapshot.visibleItems.forEach { item ->
+                    if (!item.requiresAcknowledgment && item.id !in snapshot.acknowledgedIds) {
+                        repository.acknowledge(item.id)
+                    }
+                }
+            } catch (t: Throwable) {
+                if (t is kotlinx.coroutines.CancellationException) throw t
+                logger.e(t) { "Failed to mark routine announcements as seen" }
+            }
+        }
+    }
+
     fun dismiss(announcement: Announcement) {
         if (removeFromPreview(announcement.id)) return
         viewModelScope.launch {

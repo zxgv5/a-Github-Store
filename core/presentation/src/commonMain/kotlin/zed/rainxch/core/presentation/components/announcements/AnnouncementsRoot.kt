@@ -54,12 +54,14 @@ fun AnnouncementsRoot(
     onAcknowledgeClick: (Announcement) -> Unit,
     onToggleMute: (AnnouncementCategory, Boolean) -> Unit,
     onLeavingScreen: () -> Unit = {},
+    onEnteringScreen: () -> Unit = {},
 ) {
     var showMuteSheet by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
     DisposableEffect(Unit) {
+        onEnteringScreen()
         onDispose { onLeavingScreen() }
     }
 
