@@ -18,9 +18,12 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
@@ -79,8 +82,22 @@ private fun CategoryRow(
     locked: Boolean,
     onToggle: (Boolean) -> Unit,
 ) {
+    val rowModifier = Modifier
+        .fillMaxWidth()
+        .semantics(mergeDescendants = true) {}
+        .let { base ->
+            if (locked) {
+                base
+            } else {
+                base.toggleable(
+                    value = enabled,
+                    role = Role.Switch,
+                    onValueChange = onToggle,
+                )
+            }
+        }
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = rowModifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -100,7 +117,7 @@ private fun CategoryRow(
         }
         Switch(
             checked = enabled,
-            onCheckedChange = if (locked) ({ /* no-op */ }) else onToggle,
+            onCheckedChange = null,
             enabled = !locked,
         )
     }

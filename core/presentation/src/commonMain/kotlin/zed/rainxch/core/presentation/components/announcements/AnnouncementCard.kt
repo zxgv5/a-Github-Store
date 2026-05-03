@@ -180,8 +180,8 @@ private fun ExpandableBody(body: String) {
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = if (expanded) Int.MAX_VALUE else BODY_COLLAPSED_LINES,
             onTextLayout = { layout ->
-                if (!expanded && layout.hasVisualOverflow) {
-                    isOverflowing = true
+                if (!expanded) {
+                    isOverflowing = layout.hasVisualOverflow
                 }
             },
         )
