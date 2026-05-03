@@ -1027,7 +1027,6 @@
     <string name="announcements_minutes_ago">%1$d min</string>
     <string name="announcements_hours_ago">%1$d h</string>
     <string name="announcements_days_ago">%1$d d</string>
-    <string name="announcements_dismiss">Dismiss</string>
     <string name="announcements_acknowledge">I\'ve read this</string>
     <string name="announcements_acknowledged">Acknowledged</string>
     <string name="announcements_read_more">Read more</string>
@@ -1043,4 +1042,5 @@
     <string name="announcements_severity_important">Important</string>
     <string name="announcements_severity_critical">Critical</string>
     <string name="announcements_critical_modal_close">Close after acknowledgment</string>
+    <string name="announcements_open_mute_settings">Open mute settings</string>
 </resources>

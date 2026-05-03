@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,8 +35,10 @@ import zed.rainxch.core.domain.model.Announcement
 import zed.rainxch.core.domain.model.AnnouncementCategory
 import zed.rainxch.githubstore.core.presentation.res.Res
 import zed.rainxch.githubstore.core.presentation.res.announcements_empty
+import zed.rainxch.githubstore.core.presentation.res.announcements_open_mute_settings
 import zed.rainxch.githubstore.core.presentation.res.announcements_refresh_failed
 import zed.rainxch.githubstore.core.presentation.res.announcements_title
+import zed.rainxch.githubstore.core.presentation.res.navigate_back
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,15 +48,20 @@ fun AnnouncementsRoot(
     mutedCategories: Set<AnnouncementCategory>,
     refreshFailed: Boolean,
     onNavigateBack: () -> Unit,
-    onRefresh: () -> Unit,
+    onRefresh: suspend () -> Unit,
     onCtaClick: (Announcement) -> Unit,
     onDismissClick: (Announcement) -> Unit,
     onAcknowledgeClick: (Announcement) -> Unit,
     onToggleMute: (AnnouncementCategory, Boolean) -> Unit,
+    onLeavingScreen: () -> Unit = {},
 ) {
     var showMuteSheet by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+
+    DisposableEffect(Unit) {
+        onDispose { onLeavingScreen() }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -70,7 +78,7 @@ fun AnnouncementsRoot(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
+                            contentDescription = stringResource(Res.string.navigate_back),
                         )
                     }
                 },
@@ -78,7 +86,7 @@ fun AnnouncementsRoot(
                     IconButton(onClick = { showMuteSheet = true }) {
                         Icon(
                             imageVector = Icons.Filled.Tune,
-                            contentDescription = null,
+                            contentDescription = stringResource(Res.string.announcements_open_mute_settings),
                         )
                     }
                 },
@@ -88,11 +96,13 @@ fun AnnouncementsRoot(
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = {
-                isRefreshing = true
-                onRefresh()
                 coroutineScope.launch {
-                    kotlinx.coroutines.delay(800)
-                    isRefreshing = false
+                    isRefreshing = true
+                    try {
+                        onRefresh()
+                    } finally {
+                        isRefreshing = false
+                    }
                 }
             },
             modifier = Modifier
@@ -105,7 +115,13 @@ fun AnnouncementsRoot(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = stringResource(Res.string.announcements_empty),
+                        text = stringResource(
+                            if (refreshFailed) {
+                                Res.string.announcements_refresh_failed
+                            } else {
+                                Res.string.announcements_empty
+                            },
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
