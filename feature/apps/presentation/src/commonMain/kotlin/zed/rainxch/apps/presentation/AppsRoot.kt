@@ -145,6 +145,7 @@ import zed.rainxch.githubstore.core.presentation.res.sort_name
 import zed.rainxch.githubstore.core.presentation.res.sort_recently_updated
 import zed.rainxch.githubstore.core.presentation.res.sort_updates_first
 import zed.rainxch.githubstore.core.presentation.res.uninstall
+import zed.rainxch.githubstore.core.presentation.res.discard_pending_install
 import zed.rainxch.githubstore.core.presentation.res.update
 import zed.rainxch.githubstore.core.presentation.res.update_all
 import zed.rainxch.githubstore.core.presentation.res.updated_successfully
@@ -604,6 +605,9 @@ fun AppsScreen(
                                                 onInstallPendingClick = {
                                                     onAction(AppsAction.OnInstallPendingApp(appItem.installedApp))
                                                 },
+                                                onDiscardPendingClick = {
+                                                    onAction(AppsAction.OnDiscardPendingInstall(appItem.installedApp))
+                                                },
                                                 modifier =
                                                     Modifier
                                                         .then(
@@ -641,6 +645,9 @@ fun AppsScreen(
                                                     onOpenClick = { onAction(AppsAction.OnOpenApp(appItem.installedApp)) },
                                                     onInstallPendingClick = {
                                                         onAction(AppsAction.OnInstallPendingApp(appItem.installedApp))
+                                                    },
+                                                    onDiscardPendingClick = {
+                                                        onAction(AppsAction.OnDiscardPendingInstall(appItem.installedApp))
                                                     },
                                                     onAdvancedSettingsClick = {
                                                         onAction(AppsAction.OnOpenAdvancedSettings(appItem.installedApp))
@@ -755,6 +762,7 @@ fun AppItemCard(
     onAdvancedSettingsClick: () -> Unit,
     onPickVariantClick: () -> Unit,
     onInstallPendingClick: () -> Unit,
+    onDiscardPendingClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val app = appItem.installedApp
@@ -786,6 +794,7 @@ fun AppItemCard(
                         Modifier
                             .size(64.dp)
                             .clip(RoundedCornerShape(18.dp)),
+                    apkFilePath = app.pendingInstallFilePath,
                 )
 
                 Column(modifier = Modifier.weight(1f)) {
@@ -1151,6 +1160,16 @@ fun AppItemCard(
                                     text = stringResource(Res.string.install),
                                 )
                             }
+                            // Quick escape hatch: user cancelled the
+                            // system prompt and doesn't want this app.
+                            // Discard removes the parked file + DB row.
+                            IconButton(onClick = onDiscardPendingClick) {
+                                Icon(
+                                    imageVector = Icons.Default.Cancel,
+                                    contentDescription = stringResource(Res.string.discard_pending_install),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         } else if (app.isUpdateAvailable && !app.isPendingInstall) {
                             Button(
                                 onClick = onUpdateClick,
@@ -1164,6 +1183,32 @@ fun AppItemCard(
                                 Spacer(Modifier.width(4.dp))
                                 Text(
                                     text = stringResource(Res.string.update),
+                                )
+                            }
+                        } else if (app.isPendingInstall) {
+                            // Pending row whose parked file is gone
+                            // (legacy row from before we persisted the
+                            // path, or file deleted out-of-band). The
+                            // app isn't actually installed — Open would
+                            // snackbar an error. Offer Discard so the
+                            // user can clear the row.
+                            Button(
+                                onClick = onDiscardPendingClick,
+                                modifier = Modifier.weight(1f),
+                                colors =
+                                    ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                    ),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Cancel,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = stringResource(Res.string.discard_pending_install),
                                 )
                             }
                         } else {

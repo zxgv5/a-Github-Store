@@ -273,6 +273,10 @@ class AppsViewModel(
                 installPendingApp(action.app)
             }
 
+            is AppsAction.OnDiscardPendingInstall -> {
+                discardPendingInstall(action.app)
+            }
+
             is AppsAction.OnCancelUpdate -> {
                 cancelUpdate(action.packageName)
             }
@@ -1421,6 +1425,47 @@ class AppsViewModel(
                 updateAppState(
                     app.packageName,
                     UpdateState.Error(t.message ?: "Install failed"),
+                )
+            }
+        }
+    }
+
+    /**
+     * User decided to drop a pending install — they cancelled the
+     * system installer prompt and don't want this app anymore. Cancels
+     * the orchestrator entry (this also nukes the parked APK file via
+     * the downloader's cancel path), removes the DB row, and clears
+     * any leftover pending notification.
+     */
+    private fun discardPendingInstall(app: InstalledAppUi) {
+        viewModelScope.launch {
+            try {
+                downloadOrchestrator.cancel(app.packageName)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Throwable) {
+                logger.warn("discardPendingInstall: orchestrator cancel failed: ${t.message}")
+            }
+            // Belt-and-braces: cancel doesn't nuke the file when the
+            // entry was already in AwaitingInstall — the orchestrator
+            // already cleared its in-memory metadata before the user
+            // tapped Discard. Delete the parked file directly so the
+            // bytes don't leak.
+            app.pendingInstallFilePath?.let { path ->
+                runCatching { File(path).takeIf { it.exists() }?.delete() }
+                    .onFailure {
+                        logger.warn(
+                            "discardPendingInstall: failed to delete parked file: ${it.message}",
+                        )
+                    }
+            }
+            try {
+                installedAppsRepository.deleteInstalledApp(app.packageName)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Throwable) {
+                logger.error(
+                    "discardPendingInstall: row delete failed for ${app.packageName}: ${t.message}",
                 )
             }
         }

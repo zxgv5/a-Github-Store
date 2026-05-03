@@ -103,6 +103,16 @@ sealed interface AppsAction {
         val app: InstalledAppUi,
     ) : AppsAction
 
+    /**
+     * User chose to discard a pending install (cancelled the system
+     * prompt one too many times, doesn't want this app anymore). Deletes
+     * the parked APK file from disk, removes the orchestrator entry,
+     * and removes the DB row so the app stops appearing in the list.
+     */
+    data class OnDiscardPendingInstall(
+        val app: InstalledAppUi,
+    ) : AppsAction
+
     // External import banner (E1)
     data object OnImportProposalReview : AppsAction
 

@@ -1788,6 +1788,7 @@ class DetailsViewModel(
                                         releaseTag = releaseTag,
                                         isUpdate = isUpdate,
                                         installOutcome = InstallOutcome.COMPLETED,
+                                        parkedFilePath = filePath,
                                     )
                                 } else {
                                     logger.warn(
@@ -1952,6 +1953,7 @@ class DetailsViewModel(
                 releaseTag = releaseTag,
                 isUpdate = isUpdate,
                 installOutcome = installOutcome,
+                parkedFilePath = filePath,
             )
         } else if (platform != Platform.ANDROID) {
             viewModelScope.launch {
@@ -2003,8 +2005,13 @@ class DetailsViewModel(
         releaseTag: String,
         isUpdate: Boolean,
         installOutcome: InstallOutcome,
+        parkedFilePath: String? = null,
     ) {
         val repo = _state.value.repository ?: return
+        val isPending = installOutcome != InstallOutcome.COMPLETED
+        // Only carry the parked path through when the row is actually
+        // pending — a completed install must not store a stale pointer.
+        val pendingPath = parkedFilePath?.takeIf { isPending }
 
         if (isUpdate) {
             installationManager.updateInstalledAppVersion(
@@ -2013,9 +2020,24 @@ class DetailsViewModel(
                     assetName = assetName,
                     assetUrl = assetUrl,
                     releaseTag = releaseTag,
-                    isPendingInstall = installOutcome != InstallOutcome.COMPLETED,
+                    isPendingInstall = isPending,
                 ),
             )
+            // For pending updates, also park the file path on the row
+            // so the apps list can resume the install in one tap if
+            // the user dismissed the system prompt.
+            if (pendingPath != null) {
+                runCatching {
+                    installedAppsRepository.setPendingInstallFilePath(
+                        packageName = apkInfo.packageName,
+                        path = pendingPath,
+                        version = releaseTag,
+                        assetName = assetName,
+                    )
+                }.onFailure { t ->
+                    logger.warn("Failed to park pending install path on update: ${t.message}")
+                }
+            }
         } else {
             // Snapshot the installable list as the user saw it at install
             // time — this is the reference the variant fingerprint is
@@ -2034,10 +2056,11 @@ class DetailsViewModel(
                         assetUrl = assetUrl,
                         assetSize = assetSize,
                         releaseTag = releaseTag,
-                        isPendingInstall = installOutcome != InstallOutcome.COMPLETED,
+                        isPendingInstall = isPending,
                         isFavourite = _state.value.isFavourite,
                         siblingAssetCount = installable.size,
                         pickedAssetIndex = pickedIndex,
+                        pendingInstallFilePath = pendingPath,
                     ),
                 )
             _state.value = _state.value.copy(installedApp = reloaded)
