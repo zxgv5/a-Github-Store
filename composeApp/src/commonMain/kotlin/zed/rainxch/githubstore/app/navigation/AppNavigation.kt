@@ -31,12 +31,14 @@ import zed.rainxch.apps.presentation.AppsRoot
 import zed.rainxch.apps.presentation.AppsViewModel
 import zed.rainxch.apps.presentation.import.ExternalImportRoot
 import zed.rainxch.auth.presentation.AuthenticationRoot
+import zed.rainxch.core.presentation.components.whatsnew.WhatsNewHistoryScreen
 import zed.rainxch.core.presentation.locals.LocalBottomNavigationHeight
 import zed.rainxch.core.presentation.locals.LocalBottomNavigationLiquid
 import zed.rainxch.core.presentation.locals.LocalScrollbarEnabled
 import zed.rainxch.details.presentation.DetailsRoot
 import zed.rainxch.devprofile.presentation.DeveloperProfileRoot
 import zed.rainxch.favourites.presentation.FavouritesRoot
+import zed.rainxch.githubstore.app.whatsnew.WhatsNewViewModel
 import zed.rainxch.home.presentation.HomeRoot
 import zed.rainxch.profile.presentation.ProfileRoot
 import zed.rainxch.profile.presentation.SponsorScreen
@@ -64,6 +66,8 @@ fun AppNavigation(
 
     val appsViewModel = koinViewModel<AppsViewModel>()
     val appsState by appsViewModel.state.collectAsStateWithLifecycle()
+
+    val whatsNewViewModel = koinViewModel<WhatsNewViewModel>()
 
     CompositionLocalProvider(
         LocalBottomNavigationLiquid provides liquidState,
@@ -268,6 +272,13 @@ fun AppNavigation(
                         onNavigateToSponsor = {
                             navController.navigate(GithubStoreGraph.SponsorScreen)
                         },
+                        onNavigateToWhatsNew = {
+                            navController.navigate(GithubStoreGraph.WhatsNewHistoryScreen)
+                        },
+                        onPreviewWhatsNewSheet = {
+                            whatsNewViewModel.forceShowLatest()
+                            navController.navigateUp()
+                        },
                     )
                 }
 
@@ -304,6 +315,12 @@ fun AppNavigation(
                 composable<GithubStoreGraph.MirrorPickerScreen> {
                     MirrorPickerRoot(
                         onNavigateBack = { navController.popBackStack() },
+                    )
+                }
+
+                composable<GithubStoreGraph.WhatsNewHistoryScreen> {
+                    WhatsNewHistoryScreen(
+                        onNavigateBack = { navController.navigateUp() },
                     )
                 }
 

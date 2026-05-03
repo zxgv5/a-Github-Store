@@ -107,4 +107,8 @@ interface TweaksRepository {
     fun getApkInspectCoachmarkShown(): Flow<Boolean>
 
     suspend fun setApkInspectCoachmarkShown(shown: Boolean)
+
+    fun getLastSeenWhatsNewVersionCode(): Flow<Int?>
+
+    suspend fun setLastSeenWhatsNewVersionCode(versionCode: Int)
 }

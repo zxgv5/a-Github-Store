@@ -290,6 +290,20 @@ class TweaksRepositoryImpl(
         }
     }
 
+    override fun getLastSeenWhatsNewVersionCode(): Flow<Int?> =
+        preferences.data.map { prefs ->
+            prefs[LAST_SEEN_WHATS_NEW_VERSION_CODE_KEY]
+        }
+
+    override suspend fun setLastSeenWhatsNewVersionCode(versionCode: Int) {
+        preferences.edit { prefs ->
+            val current = prefs[LAST_SEEN_WHATS_NEW_VERSION_CODE_KEY] ?: Int.MIN_VALUE
+            if (versionCode > current) {
+                prefs[LAST_SEEN_WHATS_NEW_VERSION_CODE_KEY] = versionCode
+            }
+        }
+    }
+
     companion object {
         private const val DEFAULT_UPDATE_CHECK_INTERVAL_HOURS = 6L
 
@@ -316,5 +330,6 @@ class TweaksRepositoryImpl(
         private val EXTERNAL_MATCH_SEARCH_ENABLED_KEY = booleanPreferencesKey("external_match_search_enabled")
         private val EXTERNAL_IMPORT_BANNER_DISMISSED_AT_KEY = intPreferencesKey("external_import_banner_dismissed_at")
         private val APK_INSPECT_COACHMARK_SHOWN_KEY = booleanPreferencesKey("apk_inspect_coachmark_shown")
+        private val LAST_SEEN_WHATS_NEW_VERSION_CODE_KEY = intPreferencesKey("last_seen_whats_new_version_code")
     }
 }
