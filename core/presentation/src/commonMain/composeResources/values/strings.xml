@@ -350,6 +350,7 @@
     <string name="rate_limit_used_all_free">You've used all %1$d free API requests.</string>
     <string name="rate_limit_resets_in_minutes">Resets in %1$d minutes</string>
     <string name="rate_limit_tip_sign_in">💡 Sign in to get 5,000 requests per hour instead of 60!</string>
+    <string name="releases_unavailable_temporarily">Releases are temporarily unavailable. Please try again in a bit.</string>
     <string name="rate_limit_sign_in">Sign In</string>
     <string name="rate_limit_ok">OK</string>
     <string name="rate_limit_close">Close</string>
