@@ -14,7 +14,7 @@ The client is already merged. Any backend that returns a well-formed empty list 
 
 ## 1. Endpoint
 
-```
+```text
 GET /v1/announcements
 ```
 
@@ -99,6 +99,7 @@ Untranslated locales fall back to English silently. There is no client-side erro
 - `title` length ≤ 80 chars per locale variant. Reject otherwise.
 - `body` length ≥ 50 chars and ≤ 600 chars per locale variant. The 50-char floor blocks "various improvements" filler.
 - `requiresAcknowledgment = true` → `dismissible` must be `false` (you can't both dismiss and acknowledge in the same UX).
+- `severity = CRITICAL` → `requiresAcknowledgment` must be `true`. The client only auto-promotes critical items to a modal when this flag is set; otherwise the advisory would only surface inside the inbox and miss the urgency the severity implies. Mirrors `pendingCriticalAcknowledgment` in `AnnouncementsRepository.kt`.
 - `category = SECURITY` → `severity` must be `IMPORTANT` or `CRITICAL`.
 - `category = PRIVACY` → `requiresAcknowledgment` must be `true` for any policy change item (legal requirement).
 - `ctaUrl` if present — must be `https://` (no `http://`, no other schemes).
@@ -133,7 +134,7 @@ If you prefer a DB-backed model (Postgres `announcements` table), that's also fi
 
 ### Per-announcement file shape (filesystem option)
 
-```
+```text
 announcements/
   2026-06-15-keep-android-open.json
   2026-07-01-privacy-update.json
