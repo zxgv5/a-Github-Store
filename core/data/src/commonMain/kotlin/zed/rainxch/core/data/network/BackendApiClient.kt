@@ -170,16 +170,21 @@ class BackendApiClient(
         } catch (_: Exception) {
             null
         }
-    // X-GitHub-Token is forwarded only on /v1/search and /v1/search/explore
-    // (those endpoints' backend implementation runs the live GitHub passthrough
-    // under the user's own 5000/hr quota — see project CLAUDE.md). Every other
-    // endpoint relies on the backend's own service token. Sending the user's
-    // PAT here would leak it to endpoints that don't authenticate it and
-    // wouldn't speed anything up.
+    // X-GitHub-Token is forwarded on every backend route that does a live
+    // GitHub passthrough (search, search/explore, repo lazy-fetch, releases,
+    // readme, user). Sending the header lets the backend make the upstream
+    // call under the user's own 5000/hr OAuth quota instead of the
+    // anonymous 60/hr-per-IP shared bucket — without it a popular repo's
+    // releases list can poison the backend's negative cache for 15 min on
+    // a single quota burst. DB-only routes (categories, topics, events,
+    // auth/device/*, badge) ignore the header and don't get it.
 
     suspend fun getRepo(owner: String, name: String): Result<BackendRepoResponse> =
         safeCall {
-            val response = httpClient.get("repo/$owner/$name")
+            val token = currentUserGithubToken()
+            val response = httpClient.get("repo/$owner/$name") {
+                if (token != null) header(X_GITHUB_TOKEN_HEADER, token)
+            }
             if (response.status.isSuccess()) {
                 Result.success(response.body())
             } else {
@@ -194,9 +199,11 @@ class BackendApiClient(
         perPage: Int = 100,
     ): Result<List<ReleaseNetwork>> =
         safeCall {
+            val token = currentUserGithubToken()
             val response = httpClient.get("releases/$owner/$name") {
                 parameter("page", page)
                 parameter("per_page", perPage)
+                if (token != null) header(X_GITHUB_TOKEN_HEADER, token)
                 // Cold path: backend goes to GitHub + paginates. 15s covers p99.
                 timeout {
                     requestTimeoutMillis = 15_000
@@ -215,7 +222,9 @@ class BackendApiClient(
         name: String,
     ): Result<GithubReadmeResponseDto> =
         safeCall {
+            val token = currentUserGithubToken()
             val response = httpClient.get("readme/$owner/$name") {
+                if (token != null) header(X_GITHUB_TOKEN_HEADER, token)
                 timeout {
                     requestTimeoutMillis = 15_000
                     socketTimeoutMillis = 15_000
@@ -230,7 +239,9 @@ class BackendApiClient(
 
     suspend fun getUser(username: String): Result<UserProfileNetwork> =
         safeCall {
+            val token = currentUserGithubToken()
             val response = httpClient.get("user/$username") {
+                if (token != null) header(X_GITHUB_TOKEN_HEADER, token)
                 timeout {
                     requestTimeoutMillis = 15_000
                     socketTimeoutMillis = 15_000
