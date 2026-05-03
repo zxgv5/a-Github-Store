@@ -968,4 +968,35 @@
     <string name="apps_compact_status_pending_install">pending install</string>
     <string name="apps_compact_status_ready_to_install">ready to install</string>
     <string name="discard_pending_install">Discard</string>
+
+    <!-- APK Inspect feature -->
+    <string name="apk_inspect_title">APK Inspect</string>
+    <string name="apk_inspect_button_label">Inspect APK</string>
+    <string name="apk_inspect_coachmark_title">Peek inside before installing</string>
+    <string name="apk_inspect_coachmark_body">Permissions, signing, components — see exactly what an APK declares.</string>
+    <string name="apk_inspect_coachmark_dismiss">Got it</string>
+    <string name="apk_inspect_empty">Nothing to inspect for this app yet.</string>
+    <string name="apk_inspect_source_file">Parked file</string>
+    <string name="apk_inspect_source_installed">Installed package</string>
+    <string name="apk_inspect_identity">Identity</string>
+    <string name="apk_inspect_compatibility">Compatibility</string>
+    <string name="apk_inspect_permissions">Permissions (%1$d)</string>
+    <string name="apk_inspect_permissions_empty">No permissions declared.</string>
+    <string name="apk_inspect_components">Components</string>
+    <string name="apk_inspect_file_info">File</string>
+    <string name="apk_inspect_version_code">Version</string>
+    <string name="apk_inspect_signing">Signing fingerprint</string>
+    <string name="apk_inspect_min_sdk">Minimum SDK</string>
+    <string name="apk_inspect_target_sdk">Target SDK</string>
+    <string name="apk_inspect_size">Size</string>
+    <string name="apk_inspect_section_activities">Activities</string>
+    <string name="apk_inspect_section_services">Services</string>
+    <string name="apk_inspect_section_receivers">Receivers</string>
+    <string name="apk_inspect_section_main_activity">Main activity</string>
+    <string name="apk_inspect_debuggable">Debuggable build — sketchy if this is a release.</string>
+    <string name="apk_inspect_protection_dangerous">Sensitive</string>
+    <string name="apk_inspect_protection_signature">Signature</string>
+    <string name="apk_inspect_protection_privileged">Privileged</string>
+    <string name="apk_inspect_protection_normal">Normal</string>
+    <string name="apk_inspect_protection_unknown">Unknown</string>
 </resources>

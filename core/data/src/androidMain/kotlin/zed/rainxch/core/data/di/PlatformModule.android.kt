@@ -114,6 +114,10 @@ actual val corePlatformModule =
             AndroidPackageMonitor(androidContext())
         }
 
+        single<zed.rainxch.core.domain.system.ApkInspector> {
+            zed.rainxch.core.data.services.AndroidApkInspector(androidContext())
+        }
+
         single { ManifestHintExtractor() }
 
         single {

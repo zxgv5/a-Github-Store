@@ -369,6 +369,14 @@ fun DetailsRoot(
             },
         )
     }
+
+    if (state.isApkInspectSheetVisible) {
+        zed.rainxch.details.presentation.components.ApkInspectSheet(
+            inspection = state.apkInspection,
+            isLoading = state.isApkInspectLoading,
+            onDismiss = { viewModel.onAction(DetailsAction.OnDismissApkInspect) },
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)

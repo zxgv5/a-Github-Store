@@ -30,6 +30,8 @@ import zed.rainxch.details.presentation.components.AppHeader
 import zed.rainxch.details.presentation.components.ReleaseAssetsPicker
 import zed.rainxch.details.presentation.components.ReleasesStatus
 import zed.rainxch.details.presentation.components.ReleasesStatusCard
+import zed.rainxch.details.presentation.components.ApkInspectSheet
+import zed.rainxch.details.presentation.components.InspectApkButton
 import zed.rainxch.details.presentation.components.SmartInstallButton
 import zed.rainxch.details.presentation.components.VersionPicker
 import zed.rainxch.details.presentation.components.VersionTypePicker
@@ -136,18 +138,37 @@ fun LazyListScope.header(
         item {
             val liquidState = LocalTopbarLiquidState.current
 
+            val canInspectApk =
+                state.installedApp != null ||
+                    state.installedApp?.pendingInstallFilePath != null
             Box(
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                SmartInstallButton(
-                    isDownloading = state.isDownloading,
-                    isInstalling = state.isInstalling,
-                    isLiquidGlassEnabled = state.isLiquidGlassEnabled,
-                    progress = state.downloadProgressPercent,
-                    primaryAsset = state.primaryAsset,
-                    state = state,
-                    onAction = onAction,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    SmartInstallButton(
+                        isDownloading = state.isDownloading,
+                        isInstalling = state.isInstalling,
+                        isLiquidGlassEnabled = state.isLiquidGlassEnabled,
+                        progress = state.downloadProgressPercent,
+                        primaryAsset = state.primaryAsset,
+                        state = state,
+                        onAction = onAction,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (canInspectApk) {
+                        InspectApkButton(
+                            showCoachmark = state.isApkInspectCoachmarkPending,
+                            onClick = { onAction(DetailsAction.OnInspectApk) },
+                            onCoachmarkDismiss = {
+                                onAction(DetailsAction.OnAcknowledgeApkInspectCoachmark)
+                            },
+                        )
+                    }
+                }
 
             DropdownMenu(
                 expanded = state.isInstallDropdownExpanded,

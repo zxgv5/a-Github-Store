@@ -63,6 +63,10 @@ actual val corePlatformModule = module {
         DesktopPackageMonitor()
     }
 
+    single<zed.rainxch.core.domain.system.ApkInspector> {
+        zed.rainxch.core.data.services.DesktopApkInspector()
+    }
+
     single<ExternalAppScanner> {
         DesktopExternalAppScanner()
     }

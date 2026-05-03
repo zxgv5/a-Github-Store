@@ -38,6 +38,7 @@ import zed.rainxch.core.domain.repository.SeenReposRepository
 import zed.rainxch.core.domain.repository.StarredRepository
 import zed.rainxch.core.domain.repository.TelemetryRepository
 import zed.rainxch.core.domain.repository.TweaksRepository
+import zed.rainxch.core.domain.system.ApkInspector
 import zed.rainxch.core.domain.system.DownloadOrchestrator
 import zed.rainxch.core.domain.system.DownloadSpec
 import zed.rainxch.core.domain.system.DownloadStage as OrchestratorStage
@@ -118,6 +119,7 @@ class DetailsViewModel(
     private val downloadOrchestrator: DownloadOrchestrator,
     private val telemetryRepository: TelemetryRepository,
     private val externalImportRepository: ExternalImportRepository,
+    private val apkInspector: ApkInspector,
 ) : ViewModel() {
     private var hasLoadedInitialData = false
     private var currentDownloadJob: Job? = null
@@ -132,6 +134,7 @@ class DetailsViewModel(
                 if (!hasLoadedInitialData) {
                     loadInitial()
                     observeLiquidGlassEnabled()
+                    observeApkInspectCoachmark()
 
                     hasLoadedInitialData = true
                 }
@@ -453,6 +456,80 @@ class DetailsViewModel(
             DetailsAction.SwitchToStable -> {
                 switchToStable()
             }
+
+            DetailsAction.OnInspectApk -> {
+                openApkInspectSheet()
+            }
+
+            DetailsAction.OnDismissApkInspect -> {
+                _state.update {
+                    it.copy(isApkInspectSheetVisible = false)
+                }
+            }
+
+            DetailsAction.OnAcknowledgeApkInspectCoachmark -> {
+                acknowledgeApkInspectCoachmark()
+            }
+        }
+    }
+
+    /**
+     * Resolves the right APK source and runs [ApkInspector]. Installed
+     * package wins over a parked file when both exist — a successful
+     * install means the manifest on the system is the authoritative
+     * description of what's actually running, even if the bytes that
+     * produced it are still parked. Falls back to the parked file path
+     * for pre-install inspections.
+     */
+    private fun openApkInspectSheet() {
+        val installed = _state.value.installedApp
+        val parkedPath = installed?.pendingInstallFilePath
+        val packageName = installed?.packageName
+        if (installed == null && parkedPath == null) {
+            logger.warn("openApkInspectSheet: nothing inspectable in current state")
+            return
+        }
+        _state.update {
+            it.copy(
+                isApkInspectSheetVisible = true,
+                isApkInspectLoading = true,
+                apkInspection = null,
+            )
+        }
+        viewModelScope.launch {
+            val inspection =
+                if (packageName != null && installed?.isPendingInstall == false) {
+                    apkInspector.inspectInstalled(packageName)
+                        ?: parkedPath?.let { apkInspector.inspectFile(it) }
+                } else if (parkedPath != null) {
+                    apkInspector.inspectFile(parkedPath)
+                        ?: packageName?.let { apkInspector.inspectInstalled(it) }
+                } else if (packageName != null) {
+                    apkInspector.inspectInstalled(packageName)
+                } else {
+                    null
+                }
+            _state.update {
+                it.copy(
+                    isApkInspectLoading = false,
+                    apkInspection = inspection,
+                )
+            }
+            // Opening the sheet implicitly satisfies the discoverability
+            // coachmark — no need to keep nudging the user about a
+            // feature they've now used.
+            acknowledgeApkInspectCoachmark()
+        }
+    }
+
+    private fun acknowledgeApkInspectCoachmark() {
+        if (!_state.value.isApkInspectCoachmarkPending) return
+        _state.update { it.copy(isApkInspectCoachmarkPending = false) }
+        viewModelScope.launch {
+            runCatching { tweaksRepository.setApkInspectCoachmarkShown(true) }
+                .onFailure { t ->
+                    logger.warn("Failed to persist APK inspect coachmark flag: ${t.message}")
+                }
         }
     }
 
@@ -712,6 +789,14 @@ class DetailsViewModel(
 
     private fun observeLiquidGlassEnabled() {
         viewModelScope.launch {
+        }
+    }
+
+    private fun observeApkInspectCoachmark() {
+        viewModelScope.launch {
+            tweaksRepository.getApkInspectCoachmarkShown().collect { shown ->
+                _state.update { it.copy(isApkInspectCoachmarkPending = !shown) }
+            }
         }
     }
 
