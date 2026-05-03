@@ -26,9 +26,7 @@ If you're contributing to a sibling repo ([`backend`](https://github.com/OpenHub
 
 ## Code of conduct
 
-Be respectful, on-topic, and assume good intent. Personal attacks, harassment, or discrimination of any kind will get you removed from the project. Disagreements about technical direction are welcome — they're how the project gets better. Disagreements about people are not.
-
-We don't have a separate Code of Conduct file yet; until we do, the [Contributor Covenant v2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) is our reference.
+Everyone interacting with this project — issues, pull requests, Discord, anywhere — is expected to follow our [Code of Conduct](CODE_OF_CONDUCT.md) (Contributor Covenant). Short version: be respectful, assume good intent, disagree about ideas — never about people. Maintainers will enforce it.
 
 ---
 
