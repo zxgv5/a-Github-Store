@@ -3,18 +3,15 @@ package zed.rainxch.core.data.network.interceptor
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpClientPlugin
 import io.ktor.client.statement.HttpReceivePipeline
+import io.ktor.http.HttpHeaders
 import io.ktor.util.AttributeKey
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import zed.rainxch.core.domain.repository.AuthenticationState
 
 class UnauthorizedInterceptor(
     private val authenticationState: AuthenticationState,
-    private val scope: CoroutineScope,
 ) {
     class Config {
         var authenticationState: AuthenticationState? = null
-        var scope: CoroutineScope? = null
     }
 
     companion object Plugin : HttpClientPlugin<Config, UnauthorizedInterceptor> {
@@ -28,10 +25,6 @@ class UnauthorizedInterceptor(
                     requireNotNull(config.authenticationState) {
                         "AuthenticationState must be provided"
                     },
-                scope =
-                    requireNotNull(config.scope) {
-                        "CoroutineScope must be provided"
-                    },
             )
         }
 
@@ -40,13 +33,27 @@ class UnauthorizedInterceptor(
             scope: HttpClient,
         ) {
             scope.receivePipeline.intercept(HttpReceivePipeline.After) {
+                val tokenKey = extractBearerToken(subject.call.request.headers[HttpHeaders.Authorization])
                 if (subject.status.value == 401) {
-                    plugin.scope.launch {
-                        plugin.authenticationState.notifySessionExpired()
-                    }
+                    plugin.authenticationState.notifySessionExpired(tokenKey)
+                } else {
+                    plugin.authenticationState.notifyRequestSucceeded(tokenKey)
                 }
                 proceedWith(subject)
             }
+        }
+
+        private fun extractBearerToken(headerValue: String?): String? {
+            if (headerValue.isNullOrEmpty()) return null
+            val trimmed = headerValue.trim()
+            val withoutScheme = when {
+                trimmed.startsWith("Bearer ", ignoreCase = true) ->
+                    trimmed.substring("Bearer ".length)
+                trimmed.startsWith("token ", ignoreCase = true) ->
+                    trimmed.substring("token ".length)
+                else -> trimmed
+            }
+            return withoutScheme.trim().takeIf { it.isNotEmpty() }
         }
     }
 }

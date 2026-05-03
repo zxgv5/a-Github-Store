@@ -81,6 +81,7 @@ import zed.rainxch.githubstore.core.presentation.res.failed_to_open_app
 import zed.rainxch.githubstore.core.presentation.res.failed_to_share_link
 import zed.rainxch.githubstore.core.presentation.res.failed_to_uninstall
 import zed.rainxch.githubstore.core.presentation.res.installer_saved_downloads
+import zed.rainxch.githubstore.core.presentation.res.releases_unavailable_temporarily
 import zed.rainxch.githubstore.core.presentation.res.link_copied_to_clipboard
 import zed.rainxch.githubstore.core.presentation.res.rate_limit_exceeded
 import zed.rainxch.githubstore.core.presentation.res.removed_from_favourites
@@ -884,7 +885,20 @@ class DetailsViewModel(
                     it.copy(isRetryingReleases = false, releasesLoadFailed = true)
                 }
             } catch (t: Throwable) {
+                // The detailed cause ("HTTP 403", network error, parse
+                // failure) only matters for telemetry — for the user,
+                // "the release list isn't available right now, try
+                // again in a bit" is the entire signal. Surface the
+                // friendly message via snackbar; keep the raw cause in
+                // logs so support / bug reports can still trace it.
                 logger.warn("Retry failed to load releases: ${t.message}")
+                viewModelScope.launch {
+                    _events.send(
+                        DetailsEvent.OnMessage(
+                            getString(Res.string.releases_unavailable_temporarily),
+                        ),
+                    )
+                }
                 _state.update {
                     it.copy(isRetryingReleases = false, releasesLoadFailed = true)
                 }
