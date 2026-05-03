@@ -111,4 +111,24 @@ interface TweaksRepository {
     fun getLastSeenWhatsNewVersionCode(): Flow<Int?>
 
     suspend fun setLastSeenWhatsNewVersionCode(versionCode: Int)
+
+    fun getAnnouncementsDismissedIds(): Flow<Set<String>>
+
+    suspend fun addAnnouncementDismissedId(id: String)
+
+    fun getAnnouncementsAcknowledgedIds(): Flow<Set<String>>
+
+    suspend fun addAnnouncementAcknowledgedId(id: String)
+
+    fun getAnnouncementsMutedCategories(): Flow<Set<String>>
+
+    suspend fun setAnnouncementCategoryMuted(categoryName: String, muted: Boolean)
+
+    fun getAnnouncementsCachedPayload(): Flow<String?>
+
+    suspend fun setAnnouncementsCachedPayload(payload: String?)
+
+    fun getAnnouncementsLastFetchedAt(): Flow<Long>
+
+    suspend fun setAnnouncementsLastFetchedAt(epochMillis: Long)
 }

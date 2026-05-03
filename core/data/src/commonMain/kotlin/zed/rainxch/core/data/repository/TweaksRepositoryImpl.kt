@@ -304,6 +304,68 @@ class TweaksRepositoryImpl(
         }
     }
 
+    override fun getAnnouncementsDismissedIds(): Flow<Set<String>> =
+        preferences.data.map { prefs ->
+            prefs[ANNOUNCEMENTS_DISMISSED_IDS_KEY] ?: emptySet()
+        }
+
+    override suspend fun addAnnouncementDismissedId(id: String) {
+        preferences.edit { prefs ->
+            val current = prefs[ANNOUNCEMENTS_DISMISSED_IDS_KEY] ?: emptySet()
+            prefs[ANNOUNCEMENTS_DISMISSED_IDS_KEY] = current + id
+        }
+    }
+
+    override fun getAnnouncementsAcknowledgedIds(): Flow<Set<String>> =
+        preferences.data.map { prefs ->
+            prefs[ANNOUNCEMENTS_ACKNOWLEDGED_IDS_KEY] ?: emptySet()
+        }
+
+    override suspend fun addAnnouncementAcknowledgedId(id: String) {
+        preferences.edit { prefs ->
+            val current = prefs[ANNOUNCEMENTS_ACKNOWLEDGED_IDS_KEY] ?: emptySet()
+            prefs[ANNOUNCEMENTS_ACKNOWLEDGED_IDS_KEY] = current + id
+        }
+    }
+
+    override fun getAnnouncementsMutedCategories(): Flow<Set<String>> =
+        preferences.data.map { prefs ->
+            prefs[ANNOUNCEMENTS_MUTED_CATEGORIES_KEY] ?: emptySet()
+        }
+
+    override suspend fun setAnnouncementCategoryMuted(categoryName: String, muted: Boolean) {
+        preferences.edit { prefs ->
+            val current = prefs[ANNOUNCEMENTS_MUTED_CATEGORIES_KEY] ?: emptySet()
+            prefs[ANNOUNCEMENTS_MUTED_CATEGORIES_KEY] = if (muted) current + categoryName else current - categoryName
+        }
+    }
+
+    override fun getAnnouncementsCachedPayload(): Flow<String?> =
+        preferences.data.map { prefs ->
+            prefs[ANNOUNCEMENTS_CACHED_PAYLOAD_KEY]
+        }
+
+    override suspend fun setAnnouncementsCachedPayload(payload: String?) {
+        preferences.edit { prefs ->
+            if (payload == null) {
+                prefs.remove(ANNOUNCEMENTS_CACHED_PAYLOAD_KEY)
+            } else {
+                prefs[ANNOUNCEMENTS_CACHED_PAYLOAD_KEY] = payload
+            }
+        }
+    }
+
+    override fun getAnnouncementsLastFetchedAt(): Flow<Long> =
+        preferences.data.map { prefs ->
+            prefs[ANNOUNCEMENTS_LAST_FETCHED_AT_KEY] ?: 0L
+        }
+
+    override suspend fun setAnnouncementsLastFetchedAt(epochMillis: Long) {
+        preferences.edit { prefs ->
+            prefs[ANNOUNCEMENTS_LAST_FETCHED_AT_KEY] = epochMillis
+        }
+    }
+
     companion object {
         private const val DEFAULT_UPDATE_CHECK_INTERVAL_HOURS = 6L
 
@@ -331,5 +393,10 @@ class TweaksRepositoryImpl(
         private val EXTERNAL_IMPORT_BANNER_DISMISSED_AT_KEY = intPreferencesKey("external_import_banner_dismissed_at")
         private val APK_INSPECT_COACHMARK_SHOWN_KEY = booleanPreferencesKey("apk_inspect_coachmark_shown")
         private val LAST_SEEN_WHATS_NEW_VERSION_CODE_KEY = intPreferencesKey("last_seen_whats_new_version_code")
+        private val ANNOUNCEMENTS_DISMISSED_IDS_KEY = stringSetPreferencesKey("announcements_dismissed_ids")
+        private val ANNOUNCEMENTS_ACKNOWLEDGED_IDS_KEY = stringSetPreferencesKey("announcements_acknowledged_ids")
+        private val ANNOUNCEMENTS_MUTED_CATEGORIES_KEY = stringSetPreferencesKey("announcements_muted_categories")
+        private val ANNOUNCEMENTS_CACHED_PAYLOAD_KEY = stringPreferencesKey("announcements_cached_payload")
+        private val ANNOUNCEMENTS_LAST_FETCHED_AT_KEY = longPreferencesKey("announcements_last_fetched_at")
     }
 }
