@@ -17,11 +17,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -42,12 +45,15 @@ fun AnnouncementsRoot(
     mutedCategories: Set<AnnouncementCategory>,
     refreshFailed: Boolean,
     onNavigateBack: () -> Unit,
+    onRefresh: () -> Unit,
     onCtaClick: (Announcement) -> Unit,
     onDismissClick: (Announcement) -> Unit,
     onAcknowledgeClick: (Announcement) -> Unit,
     onToggleMute: (AnnouncementCategory, Boolean) -> Unit,
 ) {
     var showMuteSheet by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -79,44 +85,55 @@ fun AnnouncementsRoot(
             )
         },
     ) { innerPadding ->
-        if (items.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(Res.string.announcements_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                if (refreshFailed) {
-                    item {
-                        Text(
-                            text = stringResource(Res.string.announcements_refresh_failed),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                isRefreshing = true
+                onRefresh()
+                coroutineScope.launch {
+                    kotlinx.coroutines.delay(800)
+                    isRefreshing = false
+                }
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            if (items.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(Res.string.announcements_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    if (refreshFailed) {
+                        item {
+                            Text(
+                                text = stringResource(Res.string.announcements_refresh_failed),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    items(items, key = { it.id }) { item ->
+                        AnnouncementCard(
+                            announcement = item,
+                            isAcknowledged = item.id in acknowledgedIds,
+                            onCtaClick = { onCtaClick(item) },
+                            onDismissClick = { onDismissClick(item) },
+                            onAcknowledgeClick = { onAcknowledgeClick(item) },
                         )
                     }
-                }
-                items(items, key = { it.id }) { item ->
-                    AnnouncementCard(
-                        announcement = item,
-                        isAcknowledged = item.id in acknowledgedIds,
-                        onCtaClick = { onCtaClick(item) },
-                        onDismissClick = { onDismissClick(item) },
-                        onAcknowledgeClick = { onAcknowledgeClick(item) },
-                    )
                 }
             }
         }
