@@ -80,6 +80,7 @@ data class AppsState(
     // Export/Import
     val isExporting: Boolean = false,
     val isImporting: Boolean = false,
+    val importSummary: zed.rainxch.apps.domain.model.ImportResult? = null,
     // Uninstall confirmation
     val appPendingUninstall: InstalledAppUi? = null,
     // Discard-pending-install confirmation

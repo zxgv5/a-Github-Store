@@ -655,8 +655,21 @@
     <string name="select_asset_title">Select installer</string>
     <string name="select_asset_description">Pick the APK to verify against your installed app</string>
     <string name="download_failed">Download failed</string>
-    <string name="export_apps">Export</string>
-    <string name="import_apps">Import</string>
+    <string name="export_apps">Export library</string>
+    <string name="export_apps_obtainium">Export for Obtainium</string>
+    <string name="import_apps">Import from file</string>
+
+    <string name="import_summary_title">Import results — %1$s</string>
+    <string name="import_summary_format_native">GitHub Store</string>
+    <string name="import_summary_format_obtainium">Obtainium</string>
+    <string name="import_summary_imported">%1$d imported</string>
+    <string name="import_summary_already_tracked">%1$d already tracked</string>
+    <string name="import_summary_failed">%1$d failed</string>
+    <string name="import_summary_non_github">%1$d not GitHub</string>
+    <string name="import_summary_non_github_caption">We don\'t track GitLab, F-Droid or HTML sources yet.</string>
+    <string name="import_summary_close">Done</string>
+    <string name="import_summary_unknown_format">Couldn\'t read this file</string>
+    <string name="import_summary_unknown_caption">It doesn\'t look like a GitHub Store or Obtainium export. Here\'s the start of the file:</string>
     <string name="import_apps_title">Import apps</string>
     <string name="import_apps_description">Paste the exported JSON to restore your tracked apps</string>
     <string name="import_apps_hint">Paste exported JSON here…</string>

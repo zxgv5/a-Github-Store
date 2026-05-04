@@ -91,7 +91,9 @@ sealed interface AppsAction {
 
     // Export/Import
     data object OnExportApps : AppsAction
+    data object OnExportObtainium : AppsAction
     data object OnImportApps : AppsAction
+    data object OnDismissImportSummary : AppsAction
 
     /**
      * User tapped the "Install" affordance on a row whose download

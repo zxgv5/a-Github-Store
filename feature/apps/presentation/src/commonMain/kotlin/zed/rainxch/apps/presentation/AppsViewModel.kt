@@ -482,8 +482,16 @@ class AppsViewModel(
                 exportApps()
             }
 
+            AppsAction.OnExportObtainium -> {
+                exportObtainium()
+            }
+
             AppsAction.OnImportApps -> {
                 importAppsFromFile()
+            }
+
+            AppsAction.OnDismissImportSummary -> {
+                _state.update { it.copy(importSummary = null) }
             }
 
             is AppsAction.OnUninstallConfirmed -> {
@@ -2005,37 +2013,33 @@ class AppsViewModel(
         _state.update { it.copy(isImporting = true) }
         try {
             val result = appsRepository.importApps(json)
+            _state.update { it.copy(importSummary = result) }
             _events.send(AppsEvent.ImportComplete(result))
-            _events.send(
-                AppsEvent.ShowSuccess(
-                    getString(Res.string.imported_apps_summary, result.imported) +
-                        (
-                            if (result.skipped > 0) {
-                                getString(
-                                    Res.string.imported_skipped,
-                                    result.skipped,
-                                )
-                            } else {
-                                ""
-                            }
-                        ) +
-                        (
-                            if (result.failed > 0) {
-                                getString(
-                                    Res.string.imported_failed,
-                                    result.failed,
-                                )
-                            } else {
-                                ""
-                            }
-                        ),
-                ),
-            )
         } catch (e: Exception) {
             logger.error("Import failed: ${e.message}")
             _events.send(AppsEvent.ShowError(getString(Res.string.import_failed, e.message ?: "")))
         } finally {
             _state.update { it.copy(isImporting = false) }
+        }
+    }
+
+    private fun exportObtainium() {
+        viewModelScope.launch {
+            _state.update { it.copy(isExporting = true) }
+            try {
+                val json = appsRepository.exportObtainium()
+                val fileName = "github-store-obtainium-${System.currentTimeMillis()}.json"
+                shareManager.shareFile(fileName, json)
+            } catch (e: Exception) {
+                logger.error("Obtainium export failed: ${e.message}")
+                _events.send(
+                    AppsEvent.ShowError(
+                        getString(Res.string.export_failed, e.message ?: ""),
+                    ),
+                )
+            } finally {
+                _state.update { it.copy(isExporting = false) }
+            }
         }
     }
 

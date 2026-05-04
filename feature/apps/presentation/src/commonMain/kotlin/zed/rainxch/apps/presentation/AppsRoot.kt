@@ -127,6 +127,7 @@ import zed.rainxch.githubstore.core.presentation.res.currently_updating
 import zed.rainxch.githubstore.core.presentation.res.downloading
 import zed.rainxch.githubstore.core.presentation.res.error_with_message
 import zed.rainxch.githubstore.core.presentation.res.export_apps
+import zed.rainxch.githubstore.core.presentation.res.export_apps_obtainium
 import zed.rainxch.githubstore.core.presentation.res.external_import_rescan_menu
 import zed.rainxch.githubstore.core.presentation.res.import_apps
 import zed.rainxch.githubstore.core.presentation.res.installed_apps
@@ -300,6 +301,16 @@ fun AppsScreen(
                                 },
                             )
                             DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.export_apps_obtainium)) },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    onAction(AppsAction.OnExportObtainium)
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Outlined.FileUpload, contentDescription = null)
+                                },
+                            )
+                            DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.import_apps)) },
                                 onClick = {
                                     showOverflowMenu = false
@@ -378,6 +389,14 @@ fun AppsScreen(
             VariantPickerDialog(
                 state = state,
                 onAction = onAction,
+            )
+        }
+
+        // Import summary sheet
+        state.importSummary?.let { summary ->
+            zed.rainxch.apps.presentation.components.ImportSummarySheet(
+                summary = summary,
+                onDismiss = { onAction(AppsAction.OnDismissImportSummary) },
             )
         }
 
