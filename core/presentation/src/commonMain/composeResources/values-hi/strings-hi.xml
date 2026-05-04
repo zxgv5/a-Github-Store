@@ -865,7 +865,7 @@
 
     <!-- Details manual refresh -->
     <string name="details_refresh">रीफ़्रेश</string>
-    <string name="details_refresh_cooldown">रीफ़्रेश (%1$dसे)</string>
+    <string name="details_refresh_cooldown">रीफ़्रेश (%1$d सेकंड)</string>
     <string name="details_refresh_more_options">अधिक विकल्प</string>
     <string name="details_refresh_snackbar_cooldown">अभी रीफ़्रेश किया — %1$d सेकंड बाद पुनः प्रयास करें।</string>
     <string name="details_refresh_snackbar_budget_exhausted">रीफ़्रेश सेवा व्यस्त है — %1$d सेकंड बाद पुनः प्रयास करें।</string>
