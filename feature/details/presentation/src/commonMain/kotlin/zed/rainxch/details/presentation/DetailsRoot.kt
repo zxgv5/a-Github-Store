@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenInBrowser
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
@@ -42,9 +43,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -54,8 +58,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.fletchmckee.liquid.LiquidState
 import io.github.fletchmckee.liquid.liquefiable
@@ -72,6 +86,8 @@ import zed.rainxch.core.presentation.theme.GithubStoreTheme
 import zed.rainxch.core.presentation.utils.ObserveAsEvents
 import zed.rainxch.core.presentation.utils.arrowKeyScroll
 import zed.rainxch.core.presentation.utils.isLiquidFrostAvailable
+import zed.rainxch.core.presentation.utils.isPullToRefreshSupported
+import zed.rainxch.core.domain.model.RefreshError
 import zed.rainxch.details.presentation.components.ApkInspectSheet
 import zed.rainxch.details.presentation.components.LanguagePicker
 import zed.rainxch.details.presentation.components.sections.about
@@ -90,11 +106,19 @@ import zed.rainxch.githubstore.core.presentation.res.add_to_favourites
 import zed.rainxch.githubstore.core.presentation.res.cancel
 import zed.rainxch.githubstore.core.presentation.res.confirm_uninstall_message
 import zed.rainxch.githubstore.core.presentation.res.confirm_uninstall_title
+import zed.rainxch.githubstore.core.presentation.res.details_refresh
+import zed.rainxch.githubstore.core.presentation.res.details_refresh_cooldown
+import zed.rainxch.githubstore.core.presentation.res.details_refresh_more_options
+import zed.rainxch.githubstore.core.presentation.res.details_refresh_snackbar_archived
+import zed.rainxch.githubstore.core.presentation.res.details_refresh_snackbar_budget_exhausted
+import zed.rainxch.githubstore.core.presentation.res.details_refresh_snackbar_cooldown
+import zed.rainxch.githubstore.core.presentation.res.details_refresh_snackbar_generic
+import zed.rainxch.githubstore.core.presentation.res.details_refresh_snackbar_not_found
+import zed.rainxch.githubstore.core.presentation.res.details_refresh_snackbar_upstream
 import zed.rainxch.githubstore.core.presentation.res.details_unlink_external_app_dialog_body
 import zed.rainxch.githubstore.core.presentation.res.details_unlink_external_app_dialog_confirm
 import zed.rainxch.githubstore.core.presentation.res.details_unlink_external_app_dialog_title
 import zed.rainxch.githubstore.core.presentation.res.details_unlink_external_app_menu
-import zed.rainxch.githubstore.core.presentation.res.details_unlink_external_app_more_options
 import zed.rainxch.githubstore.core.presentation.res.dismiss
 import zed.rainxch.githubstore.core.presentation.res.downgrade_requires_uninstall
 import zed.rainxch.githubstore.core.presentation.res.downgrade_warning_message
@@ -135,6 +159,27 @@ fun DetailsRoot(
             is DetailsEvent.OnMessage -> {
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar(event.message)
+                }
+            }
+
+            is DetailsEvent.OnRefreshError -> {
+                coroutineScope.launch {
+                    val seconds = event.retryAfterSeconds?.toInt() ?: 0
+                    val text = when (event.kind) {
+                        RefreshError.COOLDOWN -> getString(
+                            Res.string.details_refresh_snackbar_cooldown,
+                            seconds.coerceAtLeast(1),
+                        )
+                        RefreshError.BUDGET_EXHAUSTED -> getString(
+                            Res.string.details_refresh_snackbar_budget_exhausted,
+                            seconds.coerceAtLeast(1),
+                        )
+                        RefreshError.ARCHIVED -> getString(Res.string.details_refresh_snackbar_archived)
+                        RefreshError.NOT_FOUND -> getString(Res.string.details_refresh_snackbar_not_found)
+                        RefreshError.UPSTREAM -> getString(Res.string.details_refresh_snackbar_upstream)
+                        RefreshError.GENERIC -> getString(Res.string.details_refresh_snackbar_generic)
+                    }
+                    snackbarHostState.showSnackbar(text)
                 }
             }
         }
@@ -470,6 +515,7 @@ fun DetailsScreen(
                 val collapsedSectionHeight = maxHeight * 0.7f
                 val listState = rememberLazyListState()
                 val isScrollbarEnabled = LocalScrollbarEnabled.current
+                val pullEnabled = remember { isPullToRefreshSupported() }
 
                 ScrollbarContainer(
                     listState = listState,
@@ -480,24 +526,42 @@ fun DetailsScreen(
                             .widthIn(max = 680.dp)
                             .fillMaxWidth(),
                 ) {
-                    LazyColumn(
-                        state = listState,
-                        modifier =
-                            Modifier
-                                .fillMaxHeight()
-                                .widthIn(max = 680.dp)
-                                .fillMaxWidth()
-                                .arrowKeyScroll(listState, autoFocus = true)
-                                .then(
-                                    if (state.isLiquidGlassEnabled) {
-                                        Modifier.liquefiable(liquidTopbarState)
-                                    } else {
-                                        Modifier
-                                    },
-                                ).padding(innerPadding),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    val listModifier =
+                        Modifier
+                            .fillMaxHeight()
+                            .widthIn(max = 680.dp)
+                            .fillMaxWidth()
+                            .arrowKeyScroll(listState, autoFocus = true)
+                            .onPreviewKeyEvent { event ->
+                                if (event.type == KeyEventType.KeyDown &&
+                                    (event.isMetaPressed || event.isCtrlPressed) &&
+                                    event.key == Key.R
+                                ) {
+                                    onAction(DetailsAction.Refresh)
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                            .then(
+                                if (state.isLiquidGlassEnabled) {
+                                    Modifier.liquefiable(liquidTopbarState)
+                                } else {
+                                    Modifier
+                                },
+                            ).padding(innerPadding)
+
+                    PullToRefreshHost(
+                        enabled = pullEnabled,
+                        isRefreshing = state.isRefreshing,
+                        onRefresh = { onAction(DetailsAction.Refresh) },
                     ) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = listModifier,
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
+                        ) {
                     header(
                         state = state,
                         onAction = onAction,
@@ -616,10 +680,32 @@ fun DetailsScreen(
                     if (state.installLogs.isNotEmpty()) {
                         logs(state)
                     }
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PullToRefreshHost(
+    enabled: Boolean,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    if (enabled) {
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            content()
+        }
+    } else {
+        content()
     }
 }
 
@@ -755,47 +841,8 @@ private fun DetailsTopbar(
                     }
                 }
 
-                // External-import unlink lives in an overflow menu so it's
-                // discoverable without taking up scarce topbar space — and
-                // only appears for MANUAL-tagged installs (the install
-                // source the wizard / manual link sets).
-                if (state.installedApp?.installSource == InstallSource.MANUAL) {
-                    var menuOpen by remember { mutableStateOf(false) }
-                    Box {
-                        IconButton(
-                            shapes = IconButtonDefaults.shapes(),
-                            onClick = { menuOpen = true },
-                            colors =
-                                IconButtonDefaults.iconButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.onSurface,
-                                ),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = stringResource(Res.string.details_unlink_external_app_more_options),
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = menuOpen,
-                            onDismissRequest = { menuOpen = false },
-                        ) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = stringResource(Res.string.details_unlink_external_app_menu))
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.LinkOff,
-                                        contentDescription = null,
-                                    )
-                                },
-                                onClick = {
-                                    menuOpen = false
-                                    onAction(DetailsAction.OnUnlinkExternalApp)
-                                },
-                            )
-                        }
-                    }
+                if (state.repository != null) {
+                    DetailsOverflowMenu(state = state, onAction = onAction)
                 }
             }
         },
@@ -829,6 +876,97 @@ private fun DetailsTopbar(
                     },
                 ),
     )
+}
+
+@OptIn(
+    ExperimentalTime::class,
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+)
+@Composable
+private fun DetailsOverflowMenu(
+    state: DetailsState,
+    onAction: (DetailsAction) -> Unit,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    val cooldownUntilMs = state.refreshCooldownUntilEpochMs
+    var nowMs by remember { mutableLongStateOf(Clock.System.now().toEpochMilliseconds()) }
+
+    LaunchedEffect(cooldownUntilMs) {
+        if (cooldownUntilMs == null) return@LaunchedEffect
+        while (Clock.System.now().toEpochMilliseconds() < cooldownUntilMs) {
+            nowMs = Clock.System.now().toEpochMilliseconds()
+            delay(500L)
+        }
+        nowMs = Clock.System.now().toEpochMilliseconds()
+    }
+
+    val cooldownSeconds = cooldownUntilMs?.let { until ->
+        ((until - nowMs + 999) / 1000).coerceAtLeast(0L).toInt()
+    } ?: 0
+    val cooldownActive = cooldownSeconds > 0
+    val refreshDisabled = cooldownActive || state.isRefreshing
+
+    Box {
+        IconButton(
+            shapes = IconButtonDefaults.shapes(),
+            onClick = { menuOpen = true },
+            colors =
+                IconButtonDefaults.iconButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+        ) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = stringResource(Res.string.details_refresh_more_options),
+            )
+        }
+        DropdownMenu(
+            expanded = menuOpen,
+            onDismissRequest = { menuOpen = false },
+        ) {
+            DropdownMenuItem(
+                enabled = !refreshDisabled,
+                text = {
+                    Text(
+                        text =
+                            if (cooldownActive) {
+                                stringResource(Res.string.details_refresh_cooldown, cooldownSeconds)
+                            } else {
+                                stringResource(Res.string.details_refresh)
+                            },
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                    )
+                },
+                onClick = {
+                    menuOpen = false
+                    onAction(DetailsAction.Refresh)
+                },
+            )
+            if (state.installedApp?.installSource == InstallSource.MANUAL) {
+                DropdownMenuItem(
+                    text = {
+                        Text(text = stringResource(Res.string.details_unlink_external_app_menu))
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.LinkOff,
+                            contentDescription = null,
+                        )
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onAction(DetailsAction.OnUnlinkExternalApp)
+                    },
+                )
+            }
+        }
+    }
 }
 
 @Preview

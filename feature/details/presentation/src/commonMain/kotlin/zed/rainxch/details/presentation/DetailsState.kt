@@ -21,6 +21,8 @@ import zed.rainxch.details.presentation.model.TranslationTarget
 
 data class DetailsState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
+    val refreshCooldownUntilEpochMs: Long? = null,
     val errorMessage: String? = null,
     val userProfile: GithubUserProfile? = null,
     val repository: GithubRepoSummary? = null,

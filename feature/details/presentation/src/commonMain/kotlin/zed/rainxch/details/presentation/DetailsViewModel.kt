@@ -30,6 +30,8 @@ import zed.rainxch.core.domain.model.InstalledApp
 import zed.rainxch.core.domain.model.isReallyInstalled
 import zed.rainxch.core.domain.model.Platform
 import zed.rainxch.core.domain.model.RateLimitException
+import zed.rainxch.core.domain.model.RefreshError
+import zed.rainxch.core.domain.model.RefreshException
 import zed.rainxch.core.domain.model.isEffectivelyPreRelease
 import zed.rainxch.core.domain.network.Downloader
 import zed.rainxch.core.domain.repository.ExternalImportRepository
@@ -215,6 +217,8 @@ class DetailsViewModel(
             }
 
             DetailsAction.RetryReleases -> retryReleases()
+
+            DetailsAction.Refresh -> refresh()
 
             DetailsAction.OnDismissDowngradeWarning -> {
                 dismissDowngradeWarning()
@@ -2596,6 +2600,143 @@ class DetailsViewModel(
                         isLoading = false,
                         errorMessage = t.message ?: "Failed to load details",
                     )
+            }
+        }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    private fun refresh() {
+        if (_state.value.isRefreshing) return
+        val nowMs = System.now().toEpochMilliseconds()
+        _state.value.refreshCooldownUntilEpochMs?.let { cooldownUntil ->
+            if (cooldownUntil > nowMs) {
+                val remaining = ((cooldownUntil - nowMs + 999) / 1000)
+                viewModelScope.launch {
+                    _events.send(
+                        DetailsEvent.OnRefreshError(
+                            kind = RefreshError.COOLDOWN,
+                            retryAfterSeconds = remaining,
+                        ),
+                    )
+                }
+                return
+            }
+        }
+        val repo = _state.value.repository ?: return
+        val owner = repo.owner.login
+        val name = repo.name
+
+        _state.update { it.copy(isRefreshing = true) }
+        viewModelScope.launch {
+            try {
+                val refreshed = detailsRepository.refreshRepository(owner, name)
+                val releasesDeferred = async {
+                    try {
+                        detailsRepository.getAllReleases(
+                            owner = owner,
+                            repo = name,
+                            defaultBranch = refreshed.defaultBranch,
+                        )
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (t: Throwable) {
+                        logger.warn("Refresh: getAllReleases failed: ${t.message}")
+                        null
+                    }
+                }
+                val statsDeferred = async {
+                    try {
+                        detailsRepository.getRepoStats(owner, name)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (t: Throwable) {
+                        logger.warn("Refresh: getRepoStats failed: ${t.message}")
+                        null
+                    }
+                }
+                val freshReleases = releasesDeferred.await()
+                val freshStats = statsDeferred.await()
+
+                val previousSelected = _state.value.selectedRelease
+                val previousCategory = _state.value.selectedReleaseCategory
+                val carried = freshReleases?.let { list ->
+                    previousSelected?.let { prev ->
+                        list.firstOrNull { it.id == prev.id }
+                            ?: list.firstOrNull { it.tagName == prev.tagName }
+                    }
+                }
+                val selectedRelease = freshReleases?.let { list ->
+                    carried
+                        ?: list.firstOrNull { !it.isEffectivelyPreRelease() }
+                        ?: list.firstOrNull()
+                } ?: previousSelected
+
+                val resolvedCategory = when {
+                    carried != null -> previousCategory
+                    selectedRelease?.isEffectivelyPreRelease() == true -> ReleaseCategory.PRE_RELEASE
+                    selectedRelease != null -> ReleaseCategory.STABLE
+                    else -> previousCategory
+                }
+
+                val (installable, primary) = recomputeAssetsForRelease(
+                    selectedRelease,
+                    _state.value.installedApp,
+                )
+                val insights = computeReleaseInsights(
+                    freshReleases ?: _state.value.allReleases,
+                    _state.value.installedApp,
+                )
+
+                _state.update {
+                    it.copy(
+                        isRefreshing = false,
+                        repository = refreshed,
+                        allReleases = freshReleases ?: it.allReleases,
+                        releasesLoadFailed = freshReleases == null && it.releasesLoadFailed,
+                        selectedRelease = selectedRelease,
+                        selectedReleaseCategory = resolvedCategory,
+                        stats = freshStats ?: it.stats,
+                        installableAssets = installable,
+                        primaryAsset = primary,
+                        stalledStableSinceDays = insights.stalledStableSinceDays,
+                        mergedChangelog = insights.mergedChangelog,
+                        mergedChangelogBaseTag = insights.mergedChangelogBaseTag,
+                        latestStableHasInstallableAsset =
+                            insights.latestStableHasInstallableAsset,
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: RefreshException) {
+                logger.warn("Refresh failed (${e.kind}): ${e.message}")
+                val cooldownUntil = e.retryAfterSeconds?.let { sec ->
+                    System.now().toEpochMilliseconds() + sec * 1000L
+                }
+                _state.update {
+                    it.copy(
+                        isRefreshing = false,
+                        refreshCooldownUntilEpochMs =
+                            if (e.kind == RefreshError.COOLDOWN ||
+                                e.kind == RefreshError.BUDGET_EXHAUSTED
+                            ) {
+                                cooldownUntil ?: it.refreshCooldownUntilEpochMs
+                            } else {
+                                it.refreshCooldownUntilEpochMs
+                            },
+                    )
+                }
+                _events.send(
+                    DetailsEvent.OnRefreshError(
+                        kind = e.kind,
+                        retryAfterSeconds = e.retryAfterSeconds,
+                    ),
+                )
+            } catch (t: Throwable) {
+                logger.error("Refresh failed: ${t.message}")
+                _state.update { it.copy(isRefreshing = false) }
+                _events.send(
+                    DetailsEvent.OnRefreshError(kind = RefreshError.GENERIC),
+                )
             }
         }
     }

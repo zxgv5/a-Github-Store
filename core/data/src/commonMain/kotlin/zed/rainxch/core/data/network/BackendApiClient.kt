@@ -193,6 +193,25 @@ class BackendApiClient(
             }
         }
 
+    suspend fun refreshRepo(owner: String, name: String): Result<BackendRepoResponse> =
+        safeCall {
+            val token = currentUserGithubToken()
+            val response = httpClient.post("repo/$owner/$name/refresh") {
+                if (token != null) header(X_GITHUB_TOKEN_HEADER, token)
+                timeout {
+                    requestTimeoutMillis = 15_000
+                    socketTimeoutMillis = 15_000
+                }
+            }
+            when (response.status.value) {
+                in 200..299 -> Result.success(response.body())
+                429 -> Result.failure(parseRefresh429(response))
+                404 -> Result.failure(RepoNotFoundException())
+                410 -> Result.failure(RepoArchivedException())
+                else -> Result.failure(BackendException(response.status.value))
+            }
+        }
+
     suspend fun getReleases(
         owner: String,
         name: String,
@@ -410,6 +429,47 @@ class BackendApiClient(
         }
     }
 
+    private suspend fun parseRefresh429(response: io.ktor.client.statement.HttpResponse): Exception {
+        val headerRetryAfter = response.headers["Retry-After"]?.toLongOrNull()
+        val (errorTag, bodyRetryAfter) = parseRefreshErrorBody(response)
+        val retryAfter = bodyRetryAfter ?: headerRetryAfter ?: DEFAULT_REFRESH_COOLDOWN_SECONDS
+        return when (errorTag) {
+            "cooldown" -> RefreshCooldownException(retryAfter)
+            "budget_exhausted" -> RefreshBudgetExhaustedException(retryAfter)
+            else -> RateLimitedException(
+                retryAfterSeconds = retryAfter,
+                resetEpochSeconds = response.headers["X-RateLimit-Reset"]?.toLongOrNull(),
+                limit = response.headers["X-RateLimit-Limit"]?.toIntOrNull(),
+            )
+        }
+    }
+
+    private suspend fun parseRefreshErrorBody(
+        response: io.ktor.client.statement.HttpResponse,
+    ): Pair<String?, Long?> =
+        try {
+            val text = response.bodyAsText()
+            if (text.isBlank()) {
+                null to null
+            } else {
+                val obj = Json.parseToJsonElement(text) as? kotlinx.serialization.json.JsonObject
+                if (obj == null) {
+                    null to null
+                } else {
+                    val error = (obj["error"] as? kotlinx.serialization.json.JsonPrimitive)
+                        ?.contentOrNull
+                    val retryAfter = (obj["retry_after"] as? kotlinx.serialization.json.JsonPrimitive)
+                        ?.contentOrNull
+                        ?.toLongOrNull()
+                    error to retryAfter
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null to null
+        }
+
     private inline fun <T> safeCall(block: () -> Result<T>): Result<T> =
         try {
             block()
@@ -422,6 +482,7 @@ class BackendApiClient(
     companion object {
         private const val BASE_URL = BACKEND_BASE_URL
         private const val X_GITHUB_TOKEN_HEADER = "X-GitHub-Token"
+        private const val DEFAULT_REFRESH_COOLDOWN_SECONDS = 30L
     }
 }
 
@@ -435,3 +496,15 @@ class RateLimitedException(
     val resetEpochSeconds: Long? = null,
     val limit: Int? = null,
 ) : Exception("Rate limited by backend (429)")
+
+class RefreshCooldownException(
+    val retryAfterSeconds: Long,
+) : Exception("Refresh cooldown ($retryAfterSeconds s)")
+
+class RefreshBudgetExhaustedException(
+    val retryAfterSeconds: Long,
+) : Exception("Refresh budget exhausted ($retryAfterSeconds s)")
+
+class RepoNotFoundException : Exception("Repository not found")
+
+class RepoArchivedException : Exception("Repository archived")

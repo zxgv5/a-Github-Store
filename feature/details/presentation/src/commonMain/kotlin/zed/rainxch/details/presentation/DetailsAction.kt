@@ -11,6 +11,8 @@ sealed interface DetailsAction {
 
     data object RetryReleases : DetailsAction
 
+    data object Refresh : DetailsAction
+
     data object InstallPrimary : DetailsAction
 
     data object OnDismissDowngradeWarning : DetailsAction
