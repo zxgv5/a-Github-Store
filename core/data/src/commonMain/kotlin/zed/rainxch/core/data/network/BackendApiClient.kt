@@ -37,6 +37,7 @@ import zed.rainxch.core.data.dto.EventRequest
 import zed.rainxch.core.data.dto.ExternalMatchRequest
 import zed.rainxch.core.data.dto.ExternalMatchResponse
 import zed.rainxch.core.data.dto.GithubReadmeResponseDto
+import zed.rainxch.core.data.dto.GithubRepoNetworkModel
 import zed.rainxch.core.data.dto.MirrorListResponse
 import zed.rainxch.core.data.dto.ReleaseNetwork
 import zed.rainxch.core.data.dto.SigningFingerprintSeedResponse
@@ -96,20 +97,20 @@ class BackendApiClient(
     suspend fun getCategory(category: String, platform: String): Result<List<BackendRepoResponse>> =
         safeCall {
             val response = httpClient.get("categories/$category/$platform")
-            if (response.status.isSuccess()) {
-                Result.success(response.body())
-            } else {
-                Result.failure(BackendException(response.status.value))
+            when {
+                response.status.isSuccess() -> Result.success(response.body())
+                response.status == HttpStatusCode.TooManyRequests -> Result.failure(buildRateLimited(response))
+                else -> Result.failure(BackendException(response.status.value))
             }
         }
 
     suspend fun getTopic(bucket: String, platform: String): Result<List<BackendRepoResponse>> =
         safeCall {
             val response = httpClient.get("topics/$bucket/$platform")
-            if (response.status.isSuccess()) {
-                Result.success(response.body())
-            } else {
-                Result.failure(BackendException(response.status.value))
+            when {
+                response.status.isSuccess() -> Result.success(response.body())
+                response.status == HttpStatusCode.TooManyRequests -> Result.failure(buildRateLimited(response))
+                else -> Result.failure(BackendException(response.status.value))
             }
         }
 
@@ -130,10 +131,10 @@ class BackendApiClient(
                 parameter("offset", offset)
                 if (token != null) header(X_GITHUB_TOKEN_HEADER, token)
             }
-            if (response.status.isSuccess()) {
-                Result.success(response.body())
-            } else {
-                Result.failure(BackendException(response.status.value))
+            when {
+                response.status.isSuccess() -> Result.success(response.body())
+                response.status == HttpStatusCode.TooManyRequests -> Result.failure(buildRateLimited(response))
+                else -> Result.failure(BackendException(response.status.value))
             }
         }
 
@@ -156,10 +157,10 @@ class BackendApiClient(
 
                 if (token != null) header(X_GITHUB_TOKEN_HEADER, token)
             }
-            if (response.status.isSuccess()) {
-                Result.success(response.body())
-            } else {
-                Result.failure(BackendException(response.status.value))
+            when {
+                response.status.isSuccess() -> Result.success(response.body())
+                response.status == HttpStatusCode.TooManyRequests -> Result.failure(buildRateLimited(response))
+                else -> Result.failure(BackendException(response.status.value))
             }
         }
 
@@ -177,10 +178,10 @@ class BackendApiClient(
             val response = httpClient.get("repo/$owner/$name") {
                 if (token != null) header(X_GITHUB_TOKEN_HEADER, token)
             }
-            if (response.status.isSuccess()) {
-                Result.success(response.body())
-            } else {
-                Result.failure(BackendException(response.status.value))
+            when {
+                response.status.isSuccess() -> Result.success(response.body())
+                response.status == HttpStatusCode.TooManyRequests -> Result.failure(buildRateLimited(response))
+                else -> Result.failure(BackendException(response.status.value))
             }
         }
 
@@ -202,10 +203,10 @@ class BackendApiClient(
                     socketTimeoutMillis = 15_000
                 }
             }
-            if (response.status.isSuccess()) {
-                Result.success(response.body())
-            } else {
-                Result.failure(BackendException(response.status.value))
+            when {
+                response.status.isSuccess() -> Result.success(response.body())
+                response.status == HttpStatusCode.TooManyRequests -> Result.failure(buildRateLimited(response))
+                else -> Result.failure(BackendException(response.status.value))
             }
         }
 
@@ -222,10 +223,60 @@ class BackendApiClient(
                     socketTimeoutMillis = 15_000
                 }
             }
-            if (response.status.isSuccess()) {
-                Result.success(response.body())
-            } else {
-                Result.failure(BackendException(response.status.value))
+            when {
+                response.status.isSuccess() -> Result.success(response.body())
+                response.status == HttpStatusCode.TooManyRequests -> Result.failure(buildRateLimited(response))
+                else -> Result.failure(BackendException(response.status.value))
+            }
+        }
+
+    suspend fun getUserRepos(
+        username: String,
+        page: Int = 1,
+        perPage: Int = 30,
+        sort: String? = "updated",
+        type: String? = null,
+    ): Result<List<GithubRepoNetworkModel>> =
+        safeCall {
+            val token = currentUserGithubToken()
+            val response = httpClient.get("users/$username/repos") {
+                parameter("page", page)
+                parameter("per_page", perPage)
+                if (sort != null) parameter("sort", sort)
+                if (type != null) parameter("type", type)
+                if (token != null) header(X_GITHUB_TOKEN_HEADER, token)
+                timeout {
+                    requestTimeoutMillis = 15_000
+                    socketTimeoutMillis = 15_000
+                }
+            }
+            when {
+                response.status.isSuccess() -> Result.success(response.body())
+                response.status == HttpStatusCode.TooManyRequests -> Result.failure(buildRateLimited(response))
+                else -> Result.failure(BackendException(response.status.value))
+            }
+        }
+
+    suspend fun getUserStarred(
+        username: String,
+        page: Int = 1,
+        perPage: Int = 30,
+    ): Result<List<GithubRepoNetworkModel>> =
+        safeCall {
+            val token = currentUserGithubToken()
+            val response = httpClient.get("users/$username/starred") {
+                parameter("page", page)
+                parameter("per_page", perPage)
+                if (token != null) header(X_GITHUB_TOKEN_HEADER, token)
+                timeout {
+                    requestTimeoutMillis = 15_000
+                    socketTimeoutMillis = 15_000
+                }
+            }
+            when {
+                response.status.isSuccess() -> Result.success(response.body())
+                response.status == HttpStatusCode.TooManyRequests -> Result.failure(buildRateLimited(response))
+                else -> Result.failure(BackendException(response.status.value))
             }
         }
 
@@ -239,10 +290,10 @@ class BackendApiClient(
                     socketTimeoutMillis = 15_000
                 }
             }
-            if (response.status.isSuccess()) {
-                Result.success(response.body())
-            } else {
-                Result.failure(BackendException(response.status.value))
+            when {
+                response.status.isSuccess() -> Result.success(response.body())
+                response.status == HttpStatusCode.TooManyRequests -> Result.failure(buildRateLimited(response))
+                else -> Result.failure(BackendException(response.status.value))
             }
         }
 
@@ -286,20 +337,20 @@ class BackendApiClient(
     suspend fun getMirrorList(): Result<MirrorListResponse> =
         safeCall {
             val response = httpClient.get("mirrors/list")
-            if (response.status.isSuccess()) {
-                Result.success(response.body())
-            } else {
-                Result.failure(BackendException(response.status.value))
+            when {
+                response.status.isSuccess() -> Result.success(response.body())
+                response.status == HttpStatusCode.TooManyRequests -> Result.failure(buildRateLimited(response))
+                else -> Result.failure(BackendException(response.status.value))
             }
         }
 
     suspend fun getAnnouncements(): Result<AnnouncementsResponseDto> =
         safeCall {
             val response = httpClient.get("announcements")
-            if (response.status.isSuccess()) {
-                Result.success(response.body())
-            } else {
-                Result.failure(BackendException(response.status.value))
+            when {
+                response.status.isSuccess() -> Result.success(response.body())
+                response.status == HttpStatusCode.TooManyRequests -> Result.failure(buildRateLimited(response))
+                else -> Result.failure(BackendException(response.status.value))
             }
         }
 
@@ -318,6 +369,12 @@ class BackendApiClient(
                     Result.failure(BackendException(response.status.value))
             }
         }
+
+    private fun buildRateLimited(response: io.ktor.client.statement.HttpResponse): RateLimitedException {
+        val retryAfter = response.headers["Retry-After"]?.toLongOrNull()
+        val resetEpoch = response.headers["X-RateLimit-Reset"]?.toLongOrNull()
+        return RateLimitedException(retryAfterSeconds = retryAfter, resetEpochSeconds = resetEpoch)
+    }
 
     private inline fun <T> safeCall(block: () -> Result<T>): Result<T> =
         try {
@@ -339,4 +396,7 @@ class BackendException(
     message: String = "HTTP $statusCode",
 ) : Exception(message)
 
-class RateLimitedException : Exception("Rate limited by backend (429)")
+class RateLimitedException(
+    val retryAfterSeconds: Long? = null,
+    val resetEpochSeconds: Long? = null,
+) : Exception("Rate limited by backend (429)")

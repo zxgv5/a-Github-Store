@@ -24,8 +24,10 @@ import zed.rainxch.core.domain.model.ObtainiumExport
 import zed.rainxch.core.data.dto.GithubRepoNetworkModel
 import zed.rainxch.core.data.dto.ReleaseNetwork
 import zed.rainxch.core.data.mappers.toDomain
+import zed.rainxch.core.data.network.BackendApiClient
 import zed.rainxch.core.data.network.GitHubClientProvider
 import zed.rainxch.core.data.network.executeRequest
+import zed.rainxch.core.data.network.shouldFallbackToGithubOrRethrow
 import zed.rainxch.core.domain.logging.GitHubStoreLogger
 import zed.rainxch.core.domain.model.DeviceApp
 import zed.rainxch.core.domain.model.ExportedApp
@@ -46,6 +48,7 @@ class AppsRepositoryImpl(
     private val appsRepository: InstalledAppsRepository,
     private val logger: GitHubStoreLogger,
     private val clientProvider: GitHubClientProvider,
+    private val backendApiClient: BackendApiClient,
     private val packageMonitor: PackageMonitor,
     private val tweaksRepository: TweaksRepository,
 ) : AppsRepository {
@@ -76,8 +79,23 @@ class AppsRepositoryImpl(
         owner: String,
         repo: String,
         includePreReleases: Boolean,
-    ): GithubRelease? =
-        try {
+    ): GithubRelease? {
+        val backendResult = backendApiClient.getReleases(owner, repo, perPage = 10)
+        backendResult.fold(
+            onSuccess = { releases ->
+                return releases
+                    .asSequence()
+                    .filter { it.draft != true }
+                    .filter { includePreReleases || it.prerelease != true }
+                    .maxByOrNull { it.publishedAt ?: it.createdAt ?: "" }
+                    ?.toDomain()
+            },
+            onFailure = { error ->
+                if (!shouldFallbackToGithubOrRethrow(error)) return null
+            },
+        )
+
+        return try {
             val releases =
                 httpClient
                     .executeRequest<List<ReleaseNetwork>> {
@@ -99,6 +117,7 @@ class AppsRepositoryImpl(
             logger.error("Failed to fetch latest release for $owner/$repo: ${e.message}")
             null
         }
+    }
 
     override suspend fun getDeviceApps(): List<DeviceApp> = packageMonitor.getAllInstalledApps()
 
@@ -112,8 +131,34 @@ class AppsRepositoryImpl(
     override suspend fun fetchRepoInfo(
         owner: String,
         repo: String,
-    ): GithubRepoInfo? =
-        try {
+    ): GithubRepoInfo? {
+        val backendResult = backendApiClient.getRepo(owner, repo)
+        backendResult.fold(
+            onSuccess = { backendRepo ->
+                val includePreReleases = tweaksRepository.getIncludePreReleases().first()
+                val latestTag = if (includePreReleases || backendRepo.latestReleaseTag == null) {
+                    resolveLatestTagViaReleases(owner, repo, includePreReleases)
+                        ?: backendRepo.latestReleaseTag
+                } else {
+                    backendRepo.latestReleaseTag
+                }
+                return GithubRepoInfo(
+                    id = backendRepo.id,
+                    name = backendRepo.name,
+                    owner = backendRepo.owner.login,
+                    ownerAvatarUrl = backendRepo.owner.avatarUrl.orEmpty(),
+                    description = backendRepo.description,
+                    language = backendRepo.language,
+                    htmlUrl = backendRepo.htmlUrl,
+                    latestReleaseTag = latestTag,
+                )
+            },
+            onFailure = { error ->
+                if (!shouldFallbackToGithubOrRethrow(error)) return null
+            },
+        )
+
+        return try {
             val repoModel =
                 httpClient
                     .executeRequest<GithubRepoNetworkModel> {
@@ -123,26 +168,7 @@ class AppsRepositoryImpl(
                     }.getOrThrow()
 
             val includePreReleases = tweaksRepository.getIncludePreReleases().first()
-            val latestTag =
-                try {
-                    val releases =
-                        httpClient
-                            .executeRequest<List<ReleaseNetwork>> {
-                                get("/repos/$owner/$repo/releases") {
-                                    header(HttpHeaders.Accept, "application/vnd.github+json")
-                                    parameter("per_page", 5)
-                                }
-                            }.getOrThrow()
-
-                    releases
-                        .asSequence()
-                        .filter { it.draft != true }
-                        .filter { includePreReleases || it.prerelease != true }
-                        .maxByOrNull { it.publishedAt ?: it.createdAt ?: "" }
-                        ?.tagName
-                } catch (_: Exception) {
-                    null
-                }
+            val latestTag = resolveLatestTagViaReleases(owner, repo, includePreReleases)
 
             GithubRepoInfo(
                 id = repoModel.id,
@@ -160,6 +186,48 @@ class AppsRepositoryImpl(
             logger.error("Failed to fetch repo info for $owner/$repo: ${e.message}")
             null
         }
+    }
+
+    private suspend fun resolveLatestTagViaReleases(
+        owner: String,
+        repo: String,
+        includePreReleases: Boolean,
+    ): String? {
+        val backendReleases = backendApiClient.getReleases(owner, repo, perPage = 5)
+        backendReleases.fold(
+            onSuccess = { releases ->
+                return releases
+                    .asSequence()
+                    .filter { it.draft != true }
+                    .filter { includePreReleases || it.prerelease != true }
+                    .maxByOrNull { it.publishedAt ?: it.createdAt ?: "" }
+                    ?.tagName
+            },
+            onFailure = { error ->
+                if (!shouldFallbackToGithubOrRethrow(error)) return null
+            },
+        )
+
+        return try {
+            val releases =
+                httpClient
+                    .executeRequest<List<ReleaseNetwork>> {
+                        get("/repos/$owner/$repo/releases") {
+                            header(HttpHeaders.Accept, "application/vnd.github+json")
+                            parameter("per_page", 5)
+                        }
+                    }.getOrThrow()
+
+            releases
+                .asSequence()
+                .filter { it.draft != true }
+                .filter { includePreReleases || it.prerelease != true }
+                .maxByOrNull { it.publishedAt ?: it.createdAt ?: "" }
+                ?.tagName
+        } catch (_: Exception) {
+            null
+        }
+    }
 
     override suspend fun linkAppToRepo(
         deviceApp: DeviceApp,

@@ -132,6 +132,7 @@ val coreModule =
                 starredRepoDao = get(),
                 platform = get(),
                 clientProvider = get(),
+                backendApiClient = get(),
             )
         }
 

@@ -39,6 +39,7 @@ class StarredRepositoryImpl(
     private val installedAppsDao: InstalledAppDao,
     private val platform: Platform,
     private val clientProvider: GitHubClientProvider,
+    private val backendApiClient: zed.rainxch.core.data.network.BackendApiClient,
 ) : StarredRepository {
     private val httpClient: HttpClient get() = clientProvider.client
 
@@ -161,10 +162,34 @@ class StarredRepositoryImpl(
             }
         }
 
+    private fun matchesPlatform(assetName: String): Boolean {
+        val name = assetName.lowercase()
+        return when (platform) {
+            Platform.ANDROID -> name.endsWith(".apk")
+            Platform.WINDOWS -> name.endsWith(".msi") || name.endsWith(".exe")
+            Platform.MACOS -> name.endsWith(".dmg") || name.endsWith(".pkg")
+            Platform.LINUX -> name.endsWith(".appimage") || name.endsWith(".deb") ||
+                name.endsWith(".rpm") || name.endsWith(".pkg.tar.zst")
+        }
+    }
+
     private suspend fun checkForValidAssets(
         owner: String,
         repo: String,
     ): Boolean {
+        val backendResult = backendApiClient.getReleases(owner, repo, perPage = 10)
+        backendResult.fold(
+            onSuccess = { releases ->
+                val stable = releases.firstOrNull { it.draft != true && it.prerelease != true }
+                    ?: return false
+                if (stable.assets.isEmpty()) return false
+                return stable.assets.any { asset -> matchesPlatform(asset.name) }
+            },
+            onFailure = { error ->
+                if (!zed.rainxch.core.data.network.shouldFallbackToGithubOrRethrow(error)) return false
+            },
+        )
+
         return try {
             val releasesResponse =
                 httpClient.get("/repos/$owner/$repo/releases") {

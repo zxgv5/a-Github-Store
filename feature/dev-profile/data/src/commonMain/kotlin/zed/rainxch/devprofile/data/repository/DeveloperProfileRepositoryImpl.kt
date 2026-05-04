@@ -17,20 +17,25 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import zed.rainxch.core.data.local.db.dao.InstalledAppDao
+import zed.rainxch.core.data.network.BackendApiClient
 import zed.rainxch.core.data.network.GitHubClientProvider
+import zed.rainxch.core.data.network.shouldFallbackToGithubOrRethrow
 import zed.rainxch.core.domain.logging.GitHubStoreLogger
 import zed.rainxch.core.domain.model.Platform
 import zed.rainxch.core.domain.model.RateLimitException
 import zed.rainxch.core.domain.repository.FavouritesRepository
 import zed.rainxch.devprofile.data.dto.GitHubRepoResponse
 import zed.rainxch.devprofile.data.dto.GitHubUserResponse
+import zed.rainxch.devprofile.data.mappers.toDeveloperProfile
 import zed.rainxch.devprofile.data.mappers.toDomain
+import zed.rainxch.devprofile.data.mappers.toGitHubRepoResponse
 import zed.rainxch.devprofile.domain.model.DeveloperProfile
 import zed.rainxch.devprofile.domain.model.DeveloperRepository
 import zed.rainxch.devprofile.domain.repository.DeveloperProfileRepository
 
 class DeveloperProfileRepositoryImpl(
     private val clientProvider: GitHubClientProvider,
+    private val backendApiClient: BackendApiClient,
     private val platform: Platform,
     private val installedAppsDao: InstalledAppDao,
     private val favouritesRepository: FavouritesRepository,
@@ -40,6 +45,14 @@ class DeveloperProfileRepositoryImpl(
 
     override suspend fun getDeveloperProfile(username: String): Result<DeveloperProfile> {
         return withContext(Dispatchers.IO) {
+            val backendResult = backendApiClient.getUser(username)
+            backendResult.fold(
+                onSuccess = { return@withContext Result.success(it.toDeveloperProfile()) },
+                onFailure = { error ->
+                    if (!shouldFallbackToGithubOrRethrow(error)) return@withContext Result.failure(error)
+                },
+            )
+
             try {
                 val response = httpClient.get("/users/$username")
 
@@ -68,30 +81,56 @@ class DeveloperProfileRepositoryImpl(
                 val allRepos = mutableListOf<GitHubRepoResponse>()
                 var page = 1
                 val perPage = 100
+                var useBackend = true
 
                 while (true) {
-                    val response =
-                        httpClient.get("/users/$username/repos") {
-                            parameter("per_page", perPage)
-                            parameter("page", page)
-                            parameter("type", "owner")
-                            parameter("sort", "updated")
-                            parameter("direction", "desc")
+                    val pageRepos: List<GitHubRepoResponse> = if (useBackend) {
+                        val backendResult = backendApiClient.getUserRepos(
+                            username = username,
+                            page = page,
+                            perPage = perPage,
+                            sort = "updated",
+                            type = "owner",
+                        )
+                        val mapped = backendResult.fold(
+                            onSuccess = { it.map { repo -> repo.toGitHubRepoResponse() } },
+                            onFailure = { error ->
+                                if (!shouldFallbackToGithubOrRethrow(error)) {
+                                    return@withContext Result.failure(error)
+                                }
+                                useBackend = false
+                                null
+                            },
+                        )
+                        if (mapped != null) {
+                            mapped
+                        } else {
+                            continue
+                        }
+                    } else {
+                        val response =
+                            httpClient.get("/users/$username/repos") {
+                                parameter("per_page", perPage)
+                                parameter("page", page)
+                                parameter("type", "owner")
+                                parameter("sort", "updated")
+                                parameter("direction", "desc")
+                            }
+
+                        if (!response.status.isSuccess()) {
+                            return@withContext Result.failure(
+                                Exception("Failed to fetch repositories: ${response.status.description}"),
+                            )
                         }
 
-                    if (!response.status.isSuccess()) {
-                        return@withContext Result.failure(
-                            Exception("Failed to fetch repositories: ${response.status.description}"),
-                        )
+                        response.body()
                     }
 
-                    val repos: List<GitHubRepoResponse> = response.body()
+                    if (pageRepos.isEmpty()) break
 
-                    if (repos.isEmpty()) break
+                    allRepos.addAll(pageRepos.filter { !it.archived && !it.fork })
 
-                    allRepos.addAll(repos.filter { !it.archived && !it.fork })
-
-                    if (repos.size < perPage) break
+                    if (pageRepos.size < perPage) break
                     page++
                 }
 
@@ -154,6 +193,28 @@ class DeveloperProfileRepositoryImpl(
         owner: String,
         repoName: String,
     ): Triple<Boolean, Boolean, String?> {
+        val backendResult = backendApiClient.getReleases(owner, repoName, perPage = 10)
+        backendResult.fold(
+            onSuccess = { releases ->
+                val stableRelease = releases.firstOrNull { it.draft != true && it.prerelease != true }
+                if (stableRelease == null) return Triple(releases.isNotEmpty(), false, null)
+                val hasInstallable = stableRelease.assets.any { asset ->
+                    val name = asset.name.lowercase()
+                    when (platform) {
+                        Platform.ANDROID -> name.endsWith(".apk")
+                        Platform.WINDOWS -> name.endsWith(".msi") || name.endsWith(".exe")
+                        Platform.MACOS -> name.endsWith(".dmg") || name.endsWith(".pkg")
+                        Platform.LINUX -> name.endsWith(".appimage") || name.endsWith(".deb") ||
+                            name.endsWith(".rpm") || name.endsWith(".pkg.tar.zst")
+                    }
+                }
+                return Triple(true, hasInstallable, stableRelease.tagName)
+            },
+            onFailure = { error ->
+                if (!shouldFallbackToGithubOrRethrow(error)) return Triple(false, false, null)
+            },
+        )
+
         return try {
             val response =
                 httpClient.get("/repos/$owner/$repoName/releases") {
