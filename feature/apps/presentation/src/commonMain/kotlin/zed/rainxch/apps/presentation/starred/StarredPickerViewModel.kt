@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalTime::class)
-
 package zed.rainxch.apps.presentation.starred
 
 import androidx.lifecycle.ViewModel
@@ -18,7 +16,6 @@ import zed.rainxch.core.domain.model.RateLimitException
 import zed.rainxch.core.domain.repository.AuthenticationState
 import zed.rainxch.core.domain.repository.InstalledAppsRepository
 import zed.rainxch.core.domain.repository.StarredRepository
-import kotlin.time.ExperimentalTime
 
 class StarredPickerViewModel(
     private val authenticationState: AuthenticationState,
@@ -185,6 +182,10 @@ class StarredPickerViewModel(
                 }
                 return
             } catch (e: Exception) {
+                println(
+                    "StarredPicker: latest-release scan failed for ${candidate.owner}/${candidate.name}: " +
+                        "${e.javaClass.simpleName}: ${e.message}",
+                )
                 _state.update { current ->
                     current.copy(scanProgress = ++processed)
                 }
