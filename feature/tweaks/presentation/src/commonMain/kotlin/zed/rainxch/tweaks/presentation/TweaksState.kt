@@ -1,6 +1,7 @@
 package zed.rainxch.tweaks.presentation
 
 import zed.rainxch.core.domain.model.AppTheme
+import zed.rainxch.core.domain.model.DhizukuAvailability
 import zed.rainxch.core.domain.model.FontTheme
 import zed.rainxch.core.domain.model.InstallerType
 import zed.rainxch.core.domain.model.ProxyScope
@@ -21,6 +22,7 @@ data class TweaksState(
     val isClearDownloadsDialogVisible: Boolean = false,
     val installerType: InstallerType = InstallerType.DEFAULT,
     val shizukuAvailability: ShizukuAvailability = ShizukuAvailability.UNAVAILABLE,
+    val dhizukuAvailability: DhizukuAvailability = DhizukuAvailability.UNAVAILABLE,
     val autoUpdateEnabled: Boolean = false,
     val updateCheckIntervalHours: Long = 6L,
     val includePreReleases: Boolean = false,

@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.InstallMobile
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
@@ -44,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import zed.rainxch.core.domain.getPlatform
+import zed.rainxch.core.domain.model.DhizukuAvailability
 import zed.rainxch.core.domain.model.InstallerType
 import zed.rainxch.core.domain.model.Platform
 import zed.rainxch.core.domain.model.ShizukuAvailability
@@ -72,18 +74,27 @@ fun LazyListScope.installationSection(
         InstallerTypeCard(
             selectedType = state.installerType,
             shizukuAvailability = state.shizukuAvailability,
+            dhizukuAvailability = state.dhizukuAvailability,
             onTypeSelected = { type ->
                 onAction(TweaksAction.OnInstallerTypeSelected(type))
             },
-            onRequestPermission = {
+            onRequestShizukuPermission = {
                 onAction(TweaksAction.OnRequestShizukuPermission)
+            },
+            onRequestDhizukuPermission = {
+                onAction(TweaksAction.OnRequestDhizukuPermission)
             }
         )
 
-        // Auto-update toggle — only shown when Shizuku is selected and ready
-        if (state.installerType == InstallerType.SHIZUKU &&
-            state.shizukuAvailability == ShizukuAvailability.READY
-        ) {
+        // Auto-update toggle — shown when a silent installer is selected and ready
+        val silentReady = (
+            state.installerType == InstallerType.SHIZUKU &&
+                state.shizukuAvailability == ShizukuAvailability.READY
+            ) || (
+            state.installerType == InstallerType.DHIZUKU &&
+                state.dhizukuAvailability == DhizukuAvailability.READY
+            )
+        if (silentReady) {
             Spacer(Modifier.height(12.dp))
 
             AutoUpdateCard(
@@ -140,8 +151,10 @@ fun LazyListScope.updatesSection(
 private fun InstallerTypeCard(
     selectedType: InstallerType,
     shizukuAvailability: ShizukuAvailability,
+    dhizukuAvailability: DhizukuAvailability,
     onTypeSelected: (InstallerType) -> Unit,
-    onRequestPermission: () -> Unit
+    onRequestShizukuPermission: () -> Unit,
+    onRequestDhizukuPermission: () -> Unit
 ) {
     ExpressiveCard {
         Column(
@@ -171,34 +184,93 @@ private fun InstallerTypeCard(
                 }
             )
 
-            when (shizukuAvailability) {
-                ShizukuAvailability.PERMISSION_NEEDED -> {
-                    FilledTonalButton(
-                        onClick = onRequestPermission,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.shizuku_grant_permission),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+            if (selectedType == InstallerType.SHIZUKU) {
+                ShizukuStatusActions(
+                    availability = shizukuAvailability,
+                    onRequestPermission = onRequestShizukuPermission
+                )
+            }
 
-                ShizukuAvailability.UNAVAILABLE -> {
-                    HintText(text = stringResource(Res.string.shizuku_install_hint))
+            InstallerOption(
+                icon = Icons.Outlined.Security,
+                title = stringResource(Res.string.installer_type_dhizuku),
+                description = stringResource(Res.string.installer_type_dhizuku_description),
+                isSelected = selectedType == InstallerType.DHIZUKU,
+                onClick = { onTypeSelected(InstallerType.DHIZUKU) },
+                statusBadge = {
+                    DhizukuStatusBadge(
+                        availability = dhizukuAvailability
+                    )
                 }
+            )
 
-                ShizukuAvailability.NOT_RUNNING -> {
-                    HintText(text = stringResource(Res.string.shizuku_start_hint))
-                }
-
-                ShizukuAvailability.READY -> {
-                    // No hint needed
-                }
+            if (selectedType == InstallerType.DHIZUKU) {
+                DhizukuStatusActions(
+                    availability = dhizukuAvailability,
+                    onRequestPermission = onRequestDhizukuPermission
+                )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ShizukuStatusActions(
+    availability: ShizukuAvailability,
+    onRequestPermission: () -> Unit
+) {
+    when (availability) {
+        ShizukuAvailability.PERMISSION_NEEDED -> {
+            FilledTonalButton(
+                onClick = onRequestPermission,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = stringResource(Res.string.shizuku_grant_permission),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        ShizukuAvailability.UNAVAILABLE -> {
+            HintText(text = stringResource(Res.string.shizuku_install_hint))
+        }
+        ShizukuAvailability.NOT_RUNNING -> {
+            HintText(text = stringResource(Res.string.shizuku_start_hint))
+        }
+        ShizukuAvailability.READY -> Unit
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DhizukuStatusActions(
+    availability: DhizukuAvailability,
+    onRequestPermission: () -> Unit
+) {
+    when (availability) {
+        DhizukuAvailability.PERMISSION_NEEDED -> {
+            FilledTonalButton(
+                onClick = onRequestPermission,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = stringResource(Res.string.dhizuku_grant_permission),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        DhizukuAvailability.UNAVAILABLE -> {
+            HintText(text = stringResource(Res.string.dhizuku_install_hint))
+        }
+        DhizukuAvailability.NOT_RUNNING -> {
+            HintText(text = stringResource(Res.string.dhizuku_start_hint))
+        }
+        DhizukuAvailability.READY -> Unit
     }
 }
 
@@ -321,6 +393,41 @@ private fun ShizukuStatusBadge(
         )
     }
 
+    StatusDot(color = color, label = label)
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DhizukuStatusBadge(
+    availability: DhizukuAvailability
+) {
+    val (color, label) = when (availability) {
+        DhizukuAvailability.READY -> Pair(
+            Color(0xFF4CAF50),
+            stringResource(Res.string.dhizuku_status_ready)
+        )
+
+        DhizukuAvailability.PERMISSION_NEEDED -> Pair(
+            Color(0xFFFF9800),
+            stringResource(Res.string.dhizuku_status_permission_needed)
+        )
+
+        DhizukuAvailability.NOT_RUNNING -> Pair(
+            Color(0xFFFF5722),
+            stringResource(Res.string.dhizuku_status_not_running)
+        )
+
+        DhizukuAvailability.UNAVAILABLE -> Pair(
+            MaterialTheme.colorScheme.outline,
+            stringResource(Res.string.dhizuku_status_not_installed)
+        )
+    }
+
+    StatusDot(color = color, label = label)
+}
+
+@Composable
+private fun StatusDot(color: Color, label: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)

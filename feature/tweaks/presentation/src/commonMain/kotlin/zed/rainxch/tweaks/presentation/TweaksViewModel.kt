@@ -77,6 +77,7 @@ class TweaksViewModel(
                     loadAppLanguage()
 
                     observeShizukuStatus()
+                    observeDhizukuStatus()
 
                     hasLoadedInitialData = true
                 }
@@ -283,6 +284,16 @@ class TweaksViewModel(
             installerStatusProvider.shizukuAvailability.collect { availability ->
                 _state.update {
                     it.copy(shizukuAvailability = availability)
+                }
+            }
+        }
+    }
+
+    private fun observeDhizukuStatus() {
+        viewModelScope.launch {
+            installerStatusProvider.dhizukuAvailability.collect { availability ->
+                _state.update {
+                    it.copy(dhizukuAvailability = availability)
                 }
             }
         }
@@ -573,6 +584,10 @@ class TweaksViewModel(
 
             TweaksAction.OnRequestShizukuPermission -> {
                 installerStatusProvider.requestShizukuPermission()
+            }
+
+            TweaksAction.OnRequestDhizukuPermission -> {
+                installerStatusProvider.requestDhizukuPermission()
             }
 
             is TweaksAction.OnAutoUpdateToggled -> {

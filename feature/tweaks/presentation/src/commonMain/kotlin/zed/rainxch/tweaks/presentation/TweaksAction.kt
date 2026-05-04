@@ -77,6 +77,8 @@ sealed interface TweaksAction {
 
     data object OnRequestShizukuPermission : TweaksAction
 
+    data object OnRequestDhizukuPermission : TweaksAction
+
     data class OnAutoUpdateToggled(
         val enabled: Boolean,
     ) : TweaksAction
