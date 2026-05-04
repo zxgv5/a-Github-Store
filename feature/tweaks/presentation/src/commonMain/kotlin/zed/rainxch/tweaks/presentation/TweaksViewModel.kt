@@ -304,11 +304,17 @@ class TweaksViewModel(
         viewModelScope.launch {
             tweaksRepository.getInstallerAttribution().collect { attribution ->
                 _state.update { current ->
+                    val isCustom = attribution is zed.rainxch.core.domain.model.InstallerAttribution.Custom
                     val customDraft = (attribution as? zed.rainxch.core.domain.model.InstallerAttribution.Custom)?.packageName
                         ?: current.installerAttributionCustomDraft
                     current.copy(
                         installerAttribution = attribution,
                         installerAttributionCustomDraft = customDraft,
+                        installerAttributionCustomExpanded = if (isCustom) {
+                            current.installerAttributionCustomExpanded
+                        } else {
+                            false
+                        },
                     )
                 }
             }

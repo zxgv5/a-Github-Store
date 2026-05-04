@@ -16,7 +16,7 @@ sealed interface InstallerAttribution {
     fun resolvePackageName(): String? = when (this) {
         SystemDefault -> null
         is Preset -> key.packageName
-        is Custom -> packageName.takeIf { it.isNotBlank() }
+        is Custom -> packageName.trim().takeIf { it.isNotBlank() }
     }
 }
 
@@ -33,7 +33,7 @@ enum class PresetKey(val packageName: String) {
 }
 
 object InstallerAttributionDefaults {
-    val packageNamePattern = Regex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+\$", RegexOption.IGNORE_CASE)
+    val packageNamePattern = Regex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+\$")
 
     fun isValidPackageName(name: String): Boolean {
         val trimmed = name.trim()
