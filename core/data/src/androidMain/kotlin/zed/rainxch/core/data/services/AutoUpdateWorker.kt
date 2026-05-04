@@ -18,6 +18,8 @@ import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.first
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import zed.rainxch.core.data.services.dhizuku.DhizukuServiceManager
+import zed.rainxch.core.data.services.dhizuku.model.DhizukuStatus
 import zed.rainxch.core.data.services.shizuku.ShizukuServiceManager
 import zed.rainxch.core.data.services.shizuku.model.ShizukuStatus
 import zed.rainxch.core.domain.model.InstalledApp
@@ -45,6 +47,7 @@ class AutoUpdateWorker(
     private val downloader: Downloader by inject()
     private val tweaksRepository: TweaksRepository by inject()
     private val shizukuServiceManager: ShizukuServiceManager by inject()
+    private val dhizukuServiceManager: DhizukuServiceManager by inject()
 
     override suspend fun doWork(): Result {
         return try {
@@ -53,12 +56,21 @@ class AutoUpdateWorker(
             val autoUpdateEnabled = tweaksRepository.getAutoUpdateEnabled().first()
             val installerType = tweaksRepository.getInstallerType().first()
 
-            shizukuServiceManager.refreshStatus()
-            val shizukuReady = shizukuServiceManager.status.value == ShizukuStatus.READY
+            val silentReady = when (installerType) {
+                InstallerType.SHIZUKU -> {
+                    shizukuServiceManager.refreshStatus()
+                    shizukuServiceManager.status.value == ShizukuStatus.READY
+                }
+                InstallerType.DHIZUKU -> {
+                    dhizukuServiceManager.refreshStatus()
+                    dhizukuServiceManager.status.value == DhizukuStatus.READY
+                }
+                InstallerType.DEFAULT -> false
+            }
 
-            if (!autoUpdateEnabled || installerType != InstallerType.SHIZUKU || !shizukuReady) {
+            if (!autoUpdateEnabled || !silentReady) {
                 Logger.i {
-                    "AutoUpdateWorker: Conditions not met (autoUpdate=$autoUpdateEnabled, installer=$installerType, shizuku=$shizukuReady), skipping"
+                    "AutoUpdateWorker: Conditions not met (autoUpdate=$autoUpdateEnabled, installer=$installerType, silentReady=$silentReady), skipping"
                 }
                 return Result.success()
             }

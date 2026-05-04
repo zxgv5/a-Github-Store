@@ -70,9 +70,10 @@ class UpdateCheckWorker(
                 val autoUpdateEnabled = tweaksRepository.getAutoUpdateEnabled().first()
                 val installerType = tweaksRepository.getInstallerType().first()
 
-                if (autoUpdateEnabled && installerType == InstallerType.SHIZUKU) {
+                val isSilentBackend = installerType == InstallerType.SHIZUKU || installerType == InstallerType.DHIZUKU
+                if (autoUpdateEnabled && isSilentBackend) {
                     Logger.i {
-                        "UpdateCheckWorker: Auto-update enabled with Shizuku, scheduling AutoUpdateWorker for ${appsWithUpdates.size} apps"
+                        "UpdateCheckWorker: Auto-update enabled with $installerType, scheduling AutoUpdateWorker for ${appsWithUpdates.size} apps"
                     }
                     UpdateScheduler.scheduleAutoUpdate(applicationContext)
                 } else {

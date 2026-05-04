@@ -1625,6 +1625,7 @@ class DetailsViewModel(
                         when {
                             platform != Platform.ANDROID -> InstallPolicy.AlwaysInstall
                             installerType == InstallerType.SHIZUKU -> InstallPolicy.AlwaysInstall
+                            installerType == InstallerType.DHIZUKU -> InstallPolicy.AlwaysInstall
                             else -> InstallPolicy.InstallWhileForeground
                         }
 

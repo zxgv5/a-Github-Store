@@ -25,8 +25,9 @@ import zed.rainxch.core.data.services.LocalizationManager
 import zed.rainxch.core.data.services.external.AndroidExternalAppScanner
 import zed.rainxch.core.data.services.external.InstallerSourceClassifier
 import zed.rainxch.core.data.services.external.ManifestHintExtractor
-import zed.rainxch.core.data.services.shizuku.AndroidInstallerStatusProvider
-import zed.rainxch.core.data.services.shizuku.ShizukuInstallerWrapper
+import zed.rainxch.core.data.services.dhizuku.DhizukuServiceManager
+import zed.rainxch.core.data.services.installer.AndroidInstallerStatusProvider
+import zed.rainxch.core.data.services.installer.SilentInstallerDispatcher
 import zed.rainxch.core.data.services.shizuku.ShizukuServiceManager
 import zed.rainxch.core.data.utils.AndroidAppLauncher
 import zed.rainxch.core.data.utils.AndroidBrowserHelper
@@ -74,22 +75,31 @@ actual val corePlatformModule =
             ).also { it.initialize() }
         }
 
-        // Installer — the ShizukuInstallerWrapper is the public Installer singleton.
-        // It delegates to AndroidInstaller by default, intercepting with Shizuku when enabled.
+        // DhizukuServiceManager — manages Dhizuku lifecycle, permissions, service binding
+        single {
+            DhizukuServiceManager(
+                context = androidContext(),
+            ).also { it.initialize() }
+        }
+
+        // Installer — SilentInstallerDispatcher routes through the user's selected
+        // silent backend (Shizuku, Dhizuku) or falls back to the standard installer.
         single<Installer> {
-            ShizukuInstallerWrapper(
+            SilentInstallerDispatcher(
                 androidInstaller = get<AndroidInstaller>(),
                 shizukuServiceManager = get(),
+                dhizukuServiceManager = get(),
                 tweaksRepository = get(),
-            ).also { wrapper ->
-                wrapper.observeInstallerPreference(get<CoroutineScope>())
+            ).also { dispatcher ->
+                dispatcher.observeInstallerPreference(get<CoroutineScope>())
             }
         }
 
-        // InstallerStatusProvider — exposes Shizuku availability to the UI layer
+        // InstallerStatusProvider — exposes both Shizuku and Dhizuku availability to UI
         single<InstallerStatusProvider> {
             AndroidInstallerStatusProvider(
                 shizukuServiceManager = get(),
+                dhizukuServiceManager = get(),
                 scope = get(),
             )
         }

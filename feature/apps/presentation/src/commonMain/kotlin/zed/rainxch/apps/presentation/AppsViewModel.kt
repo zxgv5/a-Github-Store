@@ -1030,6 +1030,7 @@ class AppsViewModel(
                     val policy =
                         when (installerType) {
                             InstallerType.SHIZUKU -> InstallPolicy.AlwaysInstall
+                            InstallerType.DHIZUKU -> InstallPolicy.AlwaysInstall
                             InstallerType.DEFAULT -> InstallPolicy.InstallWhileForeground
                         }
 
