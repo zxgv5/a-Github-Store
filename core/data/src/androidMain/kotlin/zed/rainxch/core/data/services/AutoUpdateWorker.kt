@@ -211,7 +211,8 @@ class AutoUpdateWorker(
             )
         }
 
-        Logger.d { "AutoUpdateWorker: Installing ${app.appName} via Shizuku" }
+        val installerLabel = tweaksRepository.getInstallerType().first().name
+        Logger.d { "AutoUpdateWorker: Installing ${app.appName} via $installerLabel" }
         try {
             installer.install(filePath, ext)
         } catch (e: Exception) {
