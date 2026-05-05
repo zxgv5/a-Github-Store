@@ -15,7 +15,8 @@
         "Importar/Exportar Obtainium: trae tu biblioteca desde Obtainium con un toque, o exporta a formato Obtainium cuando quieras.",
         "Añadir desde estrellas: descubre los repos de tus estrellas en GitHub que envían APK y salta directo a instalar.",
         "Atribución del instalador: define qué nombre de instalador declaran las instalaciones silenciosas, para que las apps que filtran por origen del instalador funcionen.",
-        "Actualización manual en detalles: deslizar para actualizar en Android, opción «Actualizar» en el menú de opciones en todas las plataformas, Ctrl/Cmd+R en escritorio."
+        "Actualización manual en detalles: deslizar para actualizar en Android, opción «Actualizar» en el menú de opciones en todas las plataformas, Ctrl/Cmd+R en escritorio.",
+        "Búsqueda ordena ahora por «Actualizados recientemente» — encuentra primero los repos con releases estables más recientes."
       ]
     },
     {
