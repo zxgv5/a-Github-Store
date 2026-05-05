@@ -684,11 +684,25 @@ class DesktopInstaller(
             }
 
             "exe" -> {
-                if (Desktop.isDesktopSupported()) {
-                    Desktop.getDesktop().open(file)
-                } else {
-                    val pb = ProcessBuilder(file.absolutePath)
-                    pb.start()
+                // Hand off to ShellExecute via `cmd /c start` rather than
+                // java.awt.Desktop.open(file). Desktop.open converts the
+                // file to a URI internally and rejects paths that don't
+                // round-trip cleanly — non-ASCII characters in the user's
+                // Windows username (Chinese, Cyrillic, etc.) and unusual
+                // filename glyphs both surface as "Unsupported URI content"
+                // (#371). `start` takes the path verbatim through the
+                // system codepage and works regardless. The empty `""` is
+                // the window title, required because `start` treats the
+                // first quoted argument as the title.
+                try {
+                    ProcessBuilder("cmd", "/c", "start", "", file.absolutePath).start()
+                } catch (e: IOException) {
+                    Logger.w { "Failed to launch installer via cmd start: ${e.message}, falling back to Desktop.open" }
+                    if (Desktop.isDesktopSupported()) {
+                        Desktop.getDesktop().open(file)
+                    } else {
+                        ProcessBuilder(file.absolutePath).start()
+                    }
                 }
             }
 
